@@ -33,14 +33,15 @@ const stopIcon = new DivIcon({
 interface StopInfoPanelProps {
   stop: JeepStop;
   jeeps: JeepType[];
+  routes: any[];
   onClose: () => void;
 }
 
-function StopInfoPanel({ stop, jeeps, onClose }: StopInfoPanelProps) {
-  // Find jeeps on the same route
+function StopInfoPanel({ stop, jeeps, routes, onClose }: StopInfoPanelProps) {
+  // Find jeeps on the same route - FIXED: Use routes from props instead of calling hook
   const relevantJeeps = jeeps
     .filter(j => {
-      const route = useJeepSimulation().routes.find(r => r.id === j.routeId);
+      const route = routes.find(r => r.id === j.routeId);
       return route?.stops.some(s => s.id === stop.id);
     })
     .map(j => ({
@@ -73,7 +74,7 @@ function StopInfoPanel({ stop, jeeps, onClose }: StopInfoPanelProps) {
       {relevantJeeps.length > 0 ? (
         <div className="space-y-3">
           {relevantJeeps.map(({ jeep, eta }, idx) => {
-            const route = useJeepSimulation().routes.find(r => r.id === jeep.routeId);
+            const route = routes.find(r => r.id === jeep.routeId);
             return (
               <div key={jeep.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="w-2 h-12 rounded" style={{ background: route?.color }}></div>
@@ -183,6 +184,7 @@ function JeepInfoPanel({ jeep, routeName, routeColor, onClose }: JeepInfoPanelPr
 }
 
 export function LiveMapView() {
+  // ✅ FIXED: Call useJeepSimulation() at the top level of the component
   const { jeeps, routes } = useJeepSimulation();
   const [selectedStop, setSelectedStop] = useState<JeepStop | null>(null);
   const [selectedJeep, setSelectedJeep] = useState<{ jeep: JeepType; route: any } | null>(null);
@@ -310,6 +312,7 @@ export function LiveMapView() {
           <StopInfoPanel
             stop={selectedStop}
             jeeps={jeeps}
+            routes={routes}
             onClose={() => setSelectedStop(null)}
           />
         )}
