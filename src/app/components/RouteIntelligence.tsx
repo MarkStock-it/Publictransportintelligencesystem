@@ -1,0 +1,241 @@
+import { Navigation } from './Navigation';
+import { useJeepSimulation } from '../hooks/useJeepSimulation';
+import { ROUTES } from '../data/jeepney-data';
+import { Bus, Clock, TrendingUp, Users, AlertCircle, Award } from 'lucide-react';
+import { motion } from 'motion/react';
+
+export function RouteIntelligence() {
+  const { jeeps } = useJeepSimulation();
+
+  const routeStats = ROUTES.map(route => {
+    const routeJeeps = jeeps.filter(j => j.routeId === route.id);
+    const avgOccupancy = routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length;
+    const occupancyPercentage = (avgOccupancy / 18) * 100;
+    
+    // Calculate average interval between jeeps
+    const avgInterval = routeJeeps.length > 1 
+      ? route.avgTripDuration / routeJeeps.length 
+      : route.avgTripDuration;
+
+    // Reliability score (simulated)
+    const reliability = Math.round(85 + Math.random() * 12);
+
+    return {
+      ...route,
+      activeJeeps: routeJeeps.length,
+      avgOccupancy: Math.round(avgOccupancy),
+      occupancyPercentage: Math.round(occupancyPercentage),
+      avgInterval: Math.round(avgInterval),
+      reliability,
+    };
+  }).sort((a, b) => b.reliability - a.reliability);
+
+  const currentHour = new Date().getHours();
+  const isPeakHour = (currentHour >= 7 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 19);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">Route Intelligence</h1>
+          <p className="text-gray-600">Real-time analysis and predictive insights for all routes</p>
+        </div>
+
+        {/* Peak Hour Alert */}
+        {isPeakHour && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-amber-900 mb-1">Peak Hour Detected</h3>
+              <p className="text-sm text-amber-800">
+                Routes are experiencing higher than average demand. Wait times may be longer.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* System Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <Bus className="w-8 h-8 text-teal-500" />
+              <span className="text-3xl font-bold text-blue-900">{jeeps.length}</span>
+            </div>
+            <div className="text-sm text-gray-600">Total Active Jeeps</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="w-8 h-8 text-green-500" />
+              <span className="text-3xl font-bold text-blue-900">{ROUTES.length}</span>
+            </div>
+            <div className="text-sm text-gray-600">Routes Monitored</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <Clock className="w-8 h-8 text-blue-500" />
+              <span className="text-3xl font-bold text-blue-900">
+                {Math.round(ROUTES.reduce((acc, r) => acc + r.avgTripDuration, 0) / ROUTES.length)}m
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">Avg Trip Duration</div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="w-8 h-8 text-purple-500" />
+              <span className="text-3xl font-bold text-blue-900">
+                {Math.round(jeeps.reduce((acc, j) => acc + j.passengerCount, 0))}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">Current Passengers</div>
+          </div>
+        </div>
+
+        {/* Route Cards */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-blue-900">Route Performance</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {routeStats.map((route, index) => (
+              <motion.div
+                key={route.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100"
+              >
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-lg flex items-center justify-center"
+                        style={{ background: route.color }}
+                      >
+                        <Bus className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900">{route.name}</h3>
+                        <p className="text-sm text-gray-500">{route.stops.length} stops</p>
+                      </div>
+                    </div>
+                    {index === 0 && (
+                      <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold">
+                        <Award className="w-3 h-3" />
+                        Most Reliable
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 mb-1">Active Jeeps</div>
+                      <div className="text-2xl font-bold text-blue-900">{route.activeJeeps}</div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 mb-1">Avg Interval</div>
+                      <div className="text-2xl font-bold text-blue-900">{route.avgInterval}m</div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 mb-1">Trip Duration</div>
+                      <div className="text-2xl font-bold text-blue-900">{route.avgTripDuration}m</div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 mb-1">Reliability</div>
+                      <div className="text-2xl font-bold text-green-600">{route.reliability}%</div>
+                    </div>
+                  </div>
+
+                  {/* Occupancy Bar */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-600">Average Occupancy</span>
+                      <span className="text-xs font-semibold text-gray-700">{route.occupancyPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${route.occupancyPercentage}%`,
+                          background: route.occupancyPercentage > 80 ? '#ef4444' 
+                            : route.occupancyPercentage > 60 ? '#f59e0b' 
+                            : '#10b981'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Peak Hours */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="text-xs text-gray-600 mb-2">Peak Hours</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {route.peakHours.map(hour => (
+                        <span
+                          key={hour}
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            currentHour === hour
+                              ? 'bg-teal-500 text-white'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {hour}:00
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Insight */}
+                  {route.occupancyPercentage > 80 && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-xs text-red-800">
+                        ⚠️ Route experiencing high demand. Consider adding more jeeps.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Predictive Insights */}
+        <div className="mt-8 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl shadow-xl p-8 text-white">
+          <h2 className="text-2xl font-bold mb-4">Predictive Insights</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Demand Forecast</h3>
+              <p className="text-sm text-blue-100">
+                Peak demand expected to increase by 15% in the next hour on Route 1
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Route Optimization</h3>
+              <p className="text-sm text-blue-100">
+                Route 4 could reduce wait times by redistributing 1 jeep to Route 2
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-lg p-4">
+              <h3 className="font-semibold mb-2">Carbon Impact</h3>
+              <p className="text-sm text-blue-100">
+                Optimized routing could reduce emissions by 12% monthly
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
