@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router';
 import { Map, BarChart3, Activity, Signal, Menu } from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 
 export function Navigation() {
   const location = useLocation();
@@ -61,14 +60,10 @@ export function Navigation() {
         </div>
 
         {/* Mobile Navigation */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden mt-3 space-y-1 overflow-hidden"
-            >
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden mt-3 space-y-1 overflow-hidden"
+          >
               {navItems.map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -88,9 +83,8 @@ export function Navigation() {
                   </Link>
                 );
               })}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
     </nav>
   );

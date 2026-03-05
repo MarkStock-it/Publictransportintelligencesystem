@@ -6,7 +6,6 @@ import { useJeepSimulation } from '../hooks/useJeepSimulation';
 import { Navigation } from './Navigation';
 import { getOccupancyColor, getOccupancyLabel, calculateETA, JeepStop, Jeep as JeepType } from '../data/jeepney-data';
 import { Bus, Clock, Users, MapPin, Navigation as NavigationIcon } from 'lucide-react';
-import { motion } from 'motion/react';
 
 // Custom marker icons
 const jeepIcon = (color: string) => new DivIcon({
@@ -53,10 +52,9 @@ function StopInfoPanel({ stop, jeeps, routes, onClose }: StopInfoPanelProps) {
     .slice(0, 3);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className="absolute bottom-24 left-4 right-4 md:left-auto md:w-96 bg-white rounded-xl shadow-2xl p-6 z-[1000]"
+      style={{ opacity: 1, transform: 'translateY(0)' }}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -115,7 +113,7 @@ function StopInfoPanel({ stop, jeeps, routes, onClose }: StopInfoPanelProps) {
       <div className="mt-4 pt-4 border-t text-xs text-gray-500">
         Historical avg wait: {Math.round(Math.random() * 5 + 8)} minutes
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -128,10 +126,9 @@ interface JeepInfoPanelProps {
 
 function JeepInfoPanel({ jeep, routeName, routeColor, onClose }: JeepInfoPanelProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
       className="absolute top-20 right-4 w-80 bg-white rounded-xl shadow-2xl p-5 z-[1000]"
+      style={{ opacity: 1, transform: 'scale(1)' }}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -179,7 +176,7 @@ function JeepInfoPanel({ jeep, routeName, routeColor, onClose }: JeepInfoPanelPr
           <span>Active on route • GPS updated {Math.round(Math.random() * 5 + 1)}s ago</span>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -189,18 +186,29 @@ export function LiveMapView() {
   const [selectedStop, setSelectedStop] = useState<JeepStop | null>(null);
   const [selectedJeep, setSelectedJeep] = useState<{ jeep: JeepType; route: any } | null>(null);
   const [nightMode, setNightMode] = useState(false);
+  const isInFigma = window.location.href.includes('figma.com');
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <Navigation />
       
       <div className="flex-1 relative">
-        <MapContainer
-          center={[14.6091, 121.0223]}
-          zoom={12}
-          className="h-full w-full"
-          zoomControl={false}
-        >
+        {isInFigma ? (
+          <div className="h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center p-8">
+              <div className="text-6xl mb-4">🗺️</div>
+              <h2 className="text-xl font-semibold text-gray-700 mb-2">Interactive Map</h2>
+              <p className="text-gray-500">View the live jeepney tracking map in the web version.</p>
+              <p className="text-gray-500 mt-2">This component shows real-time jeepney locations and routes.</p>
+            </div>
+          </div>
+        ) : (
+          <MapContainer
+            center={[14.6091, 121.0223]}
+            zoom={12}
+            className="h-full w-full"
+            zoomControl={false}
+          >
           <TileLayer
             url={nightMode 
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -265,47 +273,52 @@ export function LiveMapView() {
             );
           })}
         </MapContainer>
+        )}
 
-        {/* Legend */}
-        <div className="absolute top-20 left-4 bg-white rounded-xl shadow-lg p-4 z-[1000] max-w-xs">
-          <h3 className="font-semibold text-sm text-blue-900 mb-3">Active Routes</h3>
-          <div className="space-y-2">
-            {routes.map(route => {
-              const activeJeeps = jeeps.filter(j => j.routeId === route.id);
-              return (
-                <div key={route.id} className="flex items-center gap-2 text-xs">
-                  <div className="w-4 h-4 rounded" style={{ background: route.color }}></div>
-                  <span className="flex-1 text-gray-700">{route.name}</span>
-                  <span className="text-gray-500">{activeJeeps.length} jeeps</span>
-                </div>
-              );
-            })}
+        {/* Legend - only show when map is visible */}
+        {!isInFigma && (
+          <div className="absolute top-20 left-4 bg-white rounded-xl shadow-lg p-4 z-[1000] max-w-xs">
+            <h3 className="font-semibold text-sm text-blue-900 mb-3">Active Routes</h3>
+            <div className="space-y-2">
+              {routes.map(route => {
+                const activeJeeps = jeeps.filter(j => j.routeId === route.id);
+                return (
+                  <div key={route.id} className="flex items-center gap-2 text-xs">
+                    <div className="w-4 h-4 rounded" style={{ background: route.color }}></div>
+                    <span className="flex-1 text-gray-700">{route.name}</span>
+                    <span className="text-gray-500">{activeJeeps.length} jeeps</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 pt-3 border-t space-y-2">
+              <div className="text-xs font-medium text-gray-600 mb-2">Occupancy</div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-gray-700">Seats Available</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                <span className="text-gray-700">Standing Room</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-gray-700">Full</span>
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="mt-4 pt-3 border-t space-y-2">
-            <div className="text-xs font-medium text-gray-600 mb-2">Occupancy</div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-gray-700">Seats Available</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-              <span className="text-gray-700">Standing Room</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-gray-700">Full</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Night Mode Toggle */}
-        <button
-          onClick={() => setNightMode(!nightMode)}
-          className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000] hover:bg-gray-50"
-        >
-          <span className="text-sm">{nightMode ? '☀️' : '🌙'}</span>
-        </button>
+        {/* Night Mode Toggle - only show when map is visible */}
+        {!isInFigma && (
+          <button
+            onClick={() => setNightMode(!nightMode)}
+            className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000] hover:bg-gray-50"
+          >
+            <span className="text-sm">{nightMode ? '☀️' : '🌙'}</span>
+          </button>
+        )}
 
         {/* Info Panels */}
         {selectedStop && (
