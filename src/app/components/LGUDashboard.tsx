@@ -101,7 +101,6 @@ export function LGUDashboard() {
           <div
             className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white"
           >
-          >
             <div className="flex items-center justify-between mb-2">
               <MapPin className="w-8 h-8 opacity-80" />
               <div className="text-right">

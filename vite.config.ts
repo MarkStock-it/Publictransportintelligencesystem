@@ -19,4 +19,22 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  // Rollup options can be customized here. During the build you may see
+  // warnings about modules being automatically treated as external.
+  // Those warnings look like:
+  //   "This is most likely unintended because it can break your application
+  //    at runtime. If you do want to externalize this module explicitly add
+  //    it to `build.rollupOptions.external`"
+  //
+  // To silence them and ensure the module isn’t accidentally bundled, list
+  // the module name(s) below. For example, if `fs` or a Node-only package
+  // appears, add it to the array.
+  // The array is empty by default so it doesn’t change anything until you add
+  // a name.
+  build: {
+    rollupOptions: {
+      external: [] as string[],
+    },
+  },
 })

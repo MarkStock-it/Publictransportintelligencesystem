@@ -207,7 +207,6 @@ export function LiveMapView() {
             className="h-full w-full"
             zoomControl={false}
           >
-        >
           <TileLayer
             url={nightMode 
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
