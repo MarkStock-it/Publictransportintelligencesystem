@@ -3,7 +3,6 @@ import { useJeepSimulation } from '../hooks/useJeepSimulation';
 import { ROUTES } from '../data/jeepney-data';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Building2, TrendingUp, AlertTriangle, Clock, MapPin, Users } from 'lucide-react';
-import { motion } from 'motion/react';
 
 export function LGUDashboard() {
   const { jeeps } = useJeepSimulation();
@@ -84,9 +83,7 @@ export function LGUDashboard() {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg p-6 text-white"
           >
             <div className="flex items-center justify-between mb-2">
@@ -99,13 +96,11 @@ export function LGUDashboard() {
               </div>
             </div>
             <div className="text-xs opacity-75 mt-2">+12% vs last week</div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          <div
             className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white"
+          >
           >
             <div className="flex items-center justify-between mb-2">
               <MapPin className="w-8 h-8 opacity-80" />
@@ -117,12 +112,9 @@ export function LGUDashboard() {
               </div>
             </div>
             <div className="text-xs opacity-75 mt-2">Across {ROUTES.length} routes</div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          <div
             className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white"
           >
             <div className="flex items-center justify-between mb-2">
@@ -133,12 +125,9 @@ export function LGUDashboard() {
               </div>
             </div>
             <div className="text-xs opacity-75 mt-2">-2m improvement</div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+          <div
             className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white"
           >
             <div className="flex items-center justify-between mb-2">
@@ -149,14 +138,12 @@ export function LGUDashboard() {
               </div>
             </div>
             <div className="text-xs opacity-75 mt-2">Optimal range</div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Imbalance Alerts */}
         {imbalanceAlerts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8"
           >
             <div className="flex items-start gap-3 mb-4">
@@ -185,7 +172,7 @@ export function LGUDashboard() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Charts Grid */}

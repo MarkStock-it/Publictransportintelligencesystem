@@ -2,7 +2,6 @@ import { Navigation } from './Navigation';
 import { useJeepSimulation } from '../hooks/useJeepSimulation';
 import { ROUTES } from '../data/jeepney-data';
 import { Bus, Clock, TrendingUp, Users, AlertCircle, Award } from 'lucide-react';
-import { motion } from 'motion/react';
 
 export function RouteIntelligence() {
   const { jeeps } = useJeepSimulation();
@@ -46,9 +45,7 @@ export function RouteIntelligence() {
 
         {/* Peak Hour Alert */}
         {isPeakHour && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -58,7 +55,7 @@ export function RouteIntelligence() {
                 Routes are experiencing higher than average demand. Wait times may be longer.
               </p>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* System Overview */}
@@ -106,11 +103,8 @@ export function RouteIntelligence() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {routeStats.map((route, index) => (
-              <motion.div
+              <div
                 key={route.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
                 className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100"
               >
                 <div className="p-6">
@@ -206,7 +200,7 @@ export function RouteIntelligence() {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

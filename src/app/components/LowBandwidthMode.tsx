@@ -2,7 +2,6 @@ import { Navigation } from './Navigation';
 import { useJeepSimulation } from '../hooks/useJeepSimulation';
 import { ROUTES, calculateETA } from '../data/jeepney-data';
 import { Bus, Clock, Users, ChevronRight, Signal } from 'lucide-react';
-import { motion } from 'motion/react';
 
 export function LowBandwidthMode() {
   const { jeeps } = useJeepSimulation();
@@ -49,10 +48,8 @@ export function LowBandwidthMode() {
           <h3 className="font-semibold text-blue-900 text-lg">Active Routes</h3>
           
           {routesWithJeeps.map(route => (
-            <motion.div
+            <div
               key={route.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
               className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
             >
               {/* Route Header */}
@@ -129,7 +126,7 @@ export function LowBandwidthMode() {
                   ))}
                 </div>
               </details>
-            </motion.div>
+            </div>
           ))}
         </div>
 
