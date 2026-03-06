@@ -16,9 +16,12 @@ export function useJeepSimulation() {
       setJeeps(prevJeeps => 
         prevJeeps.map(jeep => {
           const route = roadRoutes.find(r => r.id === jeep.routeId);
-          if (!route) return jeep;
+          if (!route || route.path.length === 0) return jeep;
           
-          const pathIndex = Math.floor(jeep.progress * (route.path.length - 1));
+          const pathIndex = Math.min(
+            route.path.length - 1,
+            Math.max(0, Math.floor(jeep.progress * Math.max(1, route.path.length - 1)))
+          );
           return {
             ...jeep,
             currentPosition: route.path[pathIndex],
@@ -35,7 +38,7 @@ export function useJeepSimulation() {
       setJeeps(prevJeeps => 
         prevJeeps.map(jeep => {
           const route = routes.find(r => r.id === jeep.routeId);
-          if (!route) return jeep;
+          if (!route || route.path.length === 0) return jeep;
 
           // Update progress (with speed variation) - SLOWED DOWN
           const speedFactor = (jeep.speed / 15) * 0.0003;
@@ -47,8 +50,9 @@ export function useJeepSimulation() {
           }
 
           // Calculate position along path
-          const pathIndex = Math.floor(newProgress * (route.path.length - 1));
-          const segmentProgress = (newProgress * (route.path.length - 1)) % 1;
+          const maxPathIndex = Math.max(1, route.path.length - 1);
+          const pathIndex = Math.min(route.path.length - 1, Math.floor(newProgress * maxPathIndex));
+          const segmentProgress = (newProgress * maxPathIndex) % 1;
           const start = route.path[pathIndex];
           const end = route.path[Math.min(pathIndex + 1, route.path.length - 1)];
           const currentPosition = interpolatePosition(start, end, segmentProgress);

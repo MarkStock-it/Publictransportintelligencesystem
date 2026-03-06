@@ -37,9 +37,12 @@ export function useEnhancedJeepSimulation() {
         routesInitialized: true,
         jeeps: prev.jeeps.map(jeep => {
           const route = roadRoutes.find(r => r.id === jeep.routeId);
-          if (!route) return jeep;
+          if (!route || route.path.length === 0) return jeep;
 
-          const pathIndex = Math.floor(jeep.progress * (route.path.length - 1));
+          const pathIndex = Math.min(
+            route.path.length - 1,
+            Math.max(0, Math.floor(jeep.progress * Math.max(1, route.path.length - 1)))
+          );
           return {
             ...jeep,
             currentPosition: route.path[pathIndex],
@@ -60,7 +63,7 @@ export function useEnhancedJeepSimulation() {
         const simulatedHour = (6 + (simulationTimeRef.current / 3600)) % 24; // Start at 6 AM, cycle every hour = 3600 ticks
         const newJeeps = prev.jeeps.map(jeep => {
           const route = prev.routes.find(r => r.id === jeep.routeId);
-          if (!route) return jeep;
+          if (!route || route.path.length === 0) return jeep;
 
           // Realistic speed variation based on time of day (demand pattern)
           const demandFactor = 1 + (Math.sin((simulatedHour * Math.PI) / 12) * 0.3);
@@ -72,8 +75,9 @@ export function useEnhancedJeepSimulation() {
           }
 
           // Smooth interpolation between route points
-          const pathIndex = Math.floor(newProgress * (route.path.length - 1));
-          const segmentProgress = (newProgress * (route.path.length - 1)) % 1;
+          const maxPathIndex = Math.max(1, route.path.length - 1);
+          const pathIndex = Math.min(route.path.length - 1, Math.floor(newProgress * maxPathIndex));
+          const segmentProgress = (newProgress * maxPathIndex) % 1;
           const start = route.path[pathIndex];
           const end = route.path[Math.min(pathIndex + 1, route.path.length - 1)];
           const currentPosition = interpolatePosition(start, end, segmentProgress);

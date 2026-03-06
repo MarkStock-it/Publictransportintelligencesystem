@@ -11,12 +11,14 @@ export async function fetchRouteFromOSRM(coordinates: Coordinates[]): Promise<Co
     const response = await fetch(url);
     const data = await response.json();
     
-    if (data.code === 'Ok' && data.routes && data.routes[0]) {
+    if (data.code === 'Ok' && data.routes && data.routes[0]?.geometry?.coordinates) {
       const geometry = data.routes[0].geometry.coordinates;
-      return geometry.map((coord: number[]) => ({
-        lng: coord[0],
-        lat: coord[1]
-      }));
+      if (Array.isArray(geometry) && geometry.length > 1) {
+        return geometry.map((coord: number[]) => ({
+          lng: coord[0],
+          lat: coord[1]
+        }));
+      }
     }
     return coordinates; // Fallback to original if API fails
   } catch (error) {
@@ -135,7 +137,7 @@ export async function initializeRoutesWithRoads() {
       const roadPath = await fetchRouteFromOSRM(route.path);
       return {
         ...route,
-        path: roadPath,
+        path: roadPath.length > 1 ? roadPath : route.path,
       };
     })
   );
@@ -213,17 +215,18 @@ export function getHistoricalWaitTime(stopId: string, hour: number): number {
 export function calculateETA(jeep: Jeep, targetStop: JeepStop): number {
   const route = getRouteById(jeep.routeId);
   if (!route) return 0;
+  if (route.stops.length < 2) return 0;
   
   const stopIndex = route.stops.findIndex(s => s.id === targetStop.id);
   if (stopIndex === -1) return 0;
   
-  const targetProgress = stopIndex / (route.stops.length - 1);
+  const targetProgress = stopIndex / Math.max(1, route.stops.length - 1);
   const remainingProgress = targetProgress - jeep.progress;
   
   if (remainingProgress <= 0) return 0;
   
-  const totalPathLength = route.path.length;
-  const avgSpeed = jeep.speed || 15;
+  const totalPathLength = Math.max(1, route.path.length);
+  const avgSpeed = jeep.speed > 0 ? jeep.speed : 15;
   const estimatedMinutes = (remainingProgress * totalPathLength * 0.5 / avgSpeed) * 60;
   
   return Math.max(1, Math.round(estimatedMinutes));

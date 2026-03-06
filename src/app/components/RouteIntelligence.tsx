@@ -8,7 +8,9 @@ export function RouteIntelligence() {
 
   const routeStats = ROUTES.map(route => {
     const routeJeeps = jeeps.filter(j => j.routeId === route.id);
-    const avgOccupancy = routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length;
+    const avgOccupancy = routeJeeps.length > 0
+      ? routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length
+      : 0;
     const occupancyPercentage = (avgOccupancy / 18) * 100;
     
     // Calculate average interval between jeeps
@@ -80,7 +82,11 @@ export function RouteIntelligence() {
             <div className="flex items-center justify-between mb-2">
               <Clock className="w-8 h-8 text-blue-500" />
               <span className="text-3xl font-bold text-blue-900">
-                {Math.round(ROUTES.reduce((acc, r) => acc + r.avgTripDuration, 0) / ROUTES.length)}m
+                {Math.round(
+                  ROUTES.length > 0
+                    ? ROUTES.reduce((acc, r) => acc + r.avgTripDuration, 0) / ROUTES.length
+                    : 0
+                )}m
               </span>
             </div>
             <div className="text-sm text-gray-600">Avg Trip Duration</div>

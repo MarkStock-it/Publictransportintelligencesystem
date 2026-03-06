@@ -10,7 +10,9 @@ export function LGUDashboard() {
   // Congestion data by route
   const congestionData = ROUTES.map(route => {
     const routeJeeps = jeeps.filter(j => j.routeId === route.id);
-    const avgOccupancy = routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length;
+    const avgOccupancy = routeJeeps.length > 0
+      ? routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length
+      : 0;
     const congestionLevel = (avgOccupancy / 18) * 100;
 
     return {
@@ -52,7 +54,9 @@ export function LGUDashboard() {
   // Imbalance alerts
   const imbalanceAlerts = ROUTES.map(route => {
     const routeJeeps = jeeps.filter(j => j.routeId === route.id);
-    const avgOccupancy = routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length;
+    const avgOccupancy = routeJeeps.length > 0
+      ? routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length
+      : 0;
     const optimalJeeps = Math.ceil((avgOccupancy * routeJeeps.length) / 15);
     const imbalance = optimalJeeps - routeJeeps.length;
 

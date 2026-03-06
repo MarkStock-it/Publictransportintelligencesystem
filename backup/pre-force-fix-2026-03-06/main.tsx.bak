@@ -1,0 +1,22 @@
+import ReactDOM from 'react-dom/client';
+import React from 'react';
+import './styles/index.css';
+import { HashRouter, RouterProvider } from 'react-router-dom';
+import { router } from './app/routes';
+
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+
+
+
+function RootApp() {
+  console.log('App component mounted'); // <-- Add this
+  return <RouterProvider router={router} />;
+}
+
+root.render(
+  <React.StrictMode>
+    <HashRouter>
+      <RootApp />
+    </HashRouter>
+  </React.StrictMode>
+);

@@ -1,8 +1,9 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
+import tailwindcss from "@tailwindcss/vite"
 
-// 👇 This ensures correct base for GitHub Pages
-export default defineConfig({
-  base: "/Publictransportintelligencesystem/",
-  plugins: [react()],
-})
+// Use root in dev and GitHub Pages path in production.
+export default defineConfig(({ mode }) => ({
+  base: mode === "production" ? "/Publictransportintelligencesystem/" : "/",
+  plugins: [react(), tailwindcss()],
+}))
