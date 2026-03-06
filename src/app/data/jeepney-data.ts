@@ -2,6 +2,29 @@
 
 export type OccupancyLevel = 'available' | 'standing' | 'full';
 
+// Function to fetch route from OSRM API (follows actual roads)
+export async function fetchRouteFromOSRM(coordinates: Coordinates[]): Promise<Coordinates[]> {
+  try {
+    const coordString = coordinates.map(c => `${c.lng},${c.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.code === 'Ok' && data.routes && data.routes[0]) {
+      const geometry = data.routes[0].geometry.coordinates;
+      return geometry.map((coord: number[]) => ({
+        lng: coord[0],
+        lat: coord[1]
+      }));
+    }
+    return coordinates; // Fallback to original if API fails
+  } catch (error) {
+    console.warn('OSRM routing failed, using direct path:', error);
+    return coordinates; // Fallback to original if API fails
+  }
+}
+
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -36,110 +59,107 @@ export interface Jeep {
   capacity: number;
 }
 
-// Manila area routes (realistic coordinates)
-export const ROUTES: Route[] = [
+// Cebu City routes (realistic coordinates along main roads)
+// These waypoints will be connected via OSRM to follow actual streets
+export const ROUTE_WAYPOINTS: Route[] = [
   {
     id: 'route-1',
-    name: 'Divisoria - Quiapo - Espana',
+    name: '04L - Lahug - Carbon',
     color: '#14b8a6', // Teal
     path: [
-      { lat: 14.6042, lng: 120.9822 }, // Divisoria
-      { lat: 14.5995, lng: 120.9840 }, // Recto
-      { lat: 14.5986, lng: 120.9864 }, // Quiapo
-      { lat: 14.6000, lng: 120.9920 }, // Legarda
-      { lat: 14.6065, lng: 120.9952 }, // España
-      { lat: 14.6095, lng: 120.9985 }, // V. Mapa
+      { lat: 10.3157, lng: 123.8854 }, // Lahug (Gorordo Ave start)
+      { lat: 10.3175, lng: 123.8910 }, // Gorordo Avenue
+      { lat: 10.3156, lng: 123.8945 }, // Fuente Osmena Circle
+      { lat: 10.3098, lng: 123.8985 }, // Colon Street
+      { lat: 10.2942, lng: 123.9012 }, // Carbon Market
     ],
     stops: [
-      { id: 's1-1', name: 'Divisoria', coordinates: { lat: 14.6042, lng: 120.9822 } },
-      { id: 's1-2', name: 'Recto LRT', coordinates: { lat: 14.5995, lng: 120.9840 } },
-      { id: 's1-3', name: 'Quiapo Church', coordinates: { lat: 14.5986, lng: 120.9864 } },
-      { id: 's1-4', name: 'Legarda', coordinates: { lat: 14.6000, lng: 120.9920 } },
-      { id: 's1-5', name: 'España UST', coordinates: { lat: 14.6095, lng: 120.9985 } },
+      { id: 's1-1', name: 'Lahug Terminal', coordinates: { lat: 10.3157, lng: 123.8854 } },
+      { id: 's1-2', name: 'Gorordo Avenue', coordinates: { lat: 10.3175, lng: 123.8910 } },
+      { id: 's1-3', name: 'Fuente Osmena', coordinates: { lat: 10.3156, lng: 123.8945 } },
+      { id: 's1-4', name: 'Colon Street', coordinates: { lat: 10.3098, lng: 123.8985 } },
+      { id: 's1-5', name: 'Carbon Market', coordinates: { lat: 10.2942, lng: 123.9012 } },
     ],
     avgTripDuration: 35,
     peakHours: [7, 8, 17, 18, 19],
   },
   {
     id: 'route-2',
-    name: 'Cubao - SM North - Fairview',
+    name: '06B - Bulacao - Ayala',
     color: '#f59e0b', // Amber
     path: [
-      { lat: 14.6199, lng: 121.0522 }, // Cubao
-      { lat: 14.6282, lng: 121.0487 }, // Nepa Q-Mart
-      { lat: 14.6564, lng: 121.0323 }, // SM North
-      { lat: 14.6789, lng: 121.0245 }, // Lagro
-      { lat: 14.7134, lng: 121.0726 }, // Fairview
+      { lat: 10.2756, lng: 123.8634 }, // Bulacao (N. Bacalso Ave)
+      { lat: 10.2934, lng: 123.8789 }, // Plaza Independencia
+      { lat: 10.3012, lng: 123.8856 }, // SM City Cebu
+      { lat: 10.3167, lng: 123.8932 }, // Ayala Center
     ],
     stops: [
-      { id: 's2-1', name: 'Cubao Gateway', coordinates: { lat: 14.6199, lng: 121.0522 } },
-      { id: 's2-2', name: 'Nepa Q-Mart', coordinates: { lat: 14.6282, lng: 121.0487 } },
-      { id: 's2-3', name: 'SM North EDSA', coordinates: { lat: 14.6564, lng: 121.0323 } },
-      { id: 's2-4', name: 'Lagro Market', coordinates: { lat: 14.6789, lng: 121.0245 } },
-      { id: 's2-5', name: 'Fairview Center', coordinates: { lat: 14.7134, lng: 121.0726 } },
+      { id: 's2-1', name: 'Bulacao Terminal', coordinates: { lat: 10.2756, lng: 123.8634 } },
+      { id: 's2-2', name: 'Plaza Independencia', coordinates: { lat: 10.2934, lng: 123.8789 } },
+      { id: 's2-3', name: 'SM City Cebu', coordinates: { lat: 10.3012, lng: 123.8856 } },
+      { id: 's2-4', name: 'Ayala Center', coordinates: { lat: 10.3167, lng: 123.8932 } },
     ],
     avgTripDuration: 45,
     peakHours: [6, 7, 17, 18],
   },
   {
     id: 'route-3',
-    name: 'Makati - Guadalupe - Shaw',
+    name: '13C - Mabolo - Pier',
     color: '#8b5cf6', // Purple
     path: [
-      { lat: 14.5547, lng: 121.0244 }, // Makati Ave
-      { lat: 14.5623, lng: 121.0346 }, // Guadalupe
-      { lat: 14.5813, lng: 121.0538 }, // Boni
-      { lat: 14.5872, lng: 121.0584 }, // Shaw Blvd
+      { lat: 10.3289, lng: 123.9134 }, // Mabolo (A.S. Fortuna)
+      { lat: 10.3234, lng: 123.9078 }, // Escario Street
+      { lat: 10.3156, lng: 123.8945 }, // Fuente Circle
+      { lat: 10.3045, lng: 123.8912 }, // Capitol
+      { lat: 10.2934, lng: 123.8878 }, // Pier Area
     ],
     stops: [
-      { id: 's3-1', name: 'Makati Avenue', coordinates: { lat: 14.5547, lng: 121.0244 } },
-      { id: 's3-2', name: 'Guadalupe MRT', coordinates: { lat: 14.5623, lng: 121.0346 } },
-      { id: 's3-3', name: 'Boni Avenue', coordinates: { lat: 14.5813, lng: 121.0538 } },
-      { id: 's3-4', name: 'Shaw Boulevard', coordinates: { lat: 14.5872, lng: 121.0584 } },
+      { id: 's3-1', name: 'Mabolo Church', coordinates: { lat: 10.3289, lng: 123.9134 } },
+      { id: 's3-2', name: 'Escario Street', coordinates: { lat: 10.3234, lng: 123.9078 } },
+      { id: 's3-3', name: 'Fuente Circle', coordinates: { lat: 10.3156, lng: 123.8945 } },
+      { id: 's3-4', name: 'Capitol Building', coordinates: { lat: 10.3045, lng: 123.8912 } },
+      { id: 's3-5', name: 'Pier 1', coordinates: { lat: 10.2934, lng: 123.8878 } },
     ],
     avgTripDuration: 25,
     peakHours: [7, 8, 9, 17, 18, 19],
   },
-  {
-    id: 'route-4',
-    name: 'Monumento - Balintawak - Quezon Ave',
-    color: '#ef4444', // Red
-    path: [
-      { lat: 14.6543, lng: 120.9834 }, // Monumento
-      { lat: 14.6598, lng: 120.9978 }, // Balintawak
-      { lat: 14.6432, lng: 121.0165 }, // Roosevelt
-      { lat: 14.6398, lng: 121.0254 }, // Quezon Avenue
-    ],
-    stops: [
-      { id: 's4-1', name: 'Monumento Circle', coordinates: { lat: 14.6543, lng: 120.9834 } },
-      { id: 's4-2', name: 'Balintawak Market', coordinates: { lat: 14.6598, lng: 120.9978 } },
-      { id: 's4-3', name: 'Roosevelt Station', coordinates: { lat: 14.6432, lng: 121.0165 } },
-      { id: 's4-4', name: 'Quezon Avenue', coordinates: { lat: 14.6398, lng: 121.0254 } },
-    ],
-    avgTripDuration: 30,
-    peakHours: [6, 7, 8, 17, 18],
-  },
 ];
 
-// Initial jeep positions
+// This will be populated with actual road-following routes
+export let ROUTES: Route[] = [...ROUTE_WAYPOINTS];
+
+// Initialize routes with actual road paths from OSRM
+export async function initializeRoutesWithRoads() {
+  const routesWithRoads = await Promise.all(
+    ROUTE_WAYPOINTS.map(async (route) => {
+      const roadPath = await fetchRouteFromOSRM(route.path);
+      return {
+        ...route,
+        path: roadPath,
+      };
+    })
+  );
+  ROUTES = routesWithRoads;
+  return routesWithRoads;
+}
+
+// Initial jeep positions - 10 jeeps across Cebu routes
 export const INITIAL_JEEPS: Jeep[] = [
-  // Route 1 jeeps
-  { id: 'j1-1', routeId: 'route-1', currentPosition: ROUTES[0].path[0], occupancy: 'available', speed: 15, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 8, capacity: 18 },
-  { id: 'j1-2', routeId: 'route-1', currentPosition: ROUTES[0].path[2], occupancy: 'standing', speed: 12, direction: 0, lastUpdate: new Date(), progress: 0.4, passengerCount: 22, capacity: 18 },
-  { id: 'j1-3', routeId: 'route-1', currentPosition: ROUTES[0].path[4], occupancy: 'available', speed: 18, direction: 0, lastUpdate: new Date(), progress: 0.75, passengerCount: 6, capacity: 18 },
+  // Route 1 jeeps (04L - Lahug-Carbon) - 4 jeeps
+  { id: 'j1-1', routeId: 'route-1', currentPosition: ROUTE_WAYPOINTS[0].path[0], occupancy: 'available', speed: 15, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 8, capacity: 18 },
+  { id: 'j1-2', routeId: 'route-1', currentPosition: ROUTE_WAYPOINTS[0].path[1], occupancy: 'standing', speed: 12, direction: 0, lastUpdate: new Date(), progress: 0.25, passengerCount: 22, capacity: 18 },
+  { id: 'j1-3', routeId: 'route-1', currentPosition: ROUTE_WAYPOINTS[0].path[2], occupancy: 'available', speed: 18, direction: 0, lastUpdate: new Date(), progress: 0.6, passengerCount: 6, capacity: 18 },
+  { id: 'j1-4', routeId: 'route-1', currentPosition: ROUTE_WAYPOINTS[0].path[3], occupancy: 'standing', speed: 14, direction: 0, lastUpdate: new Date(), progress: 0.85, passengerCount: 20, capacity: 18 },
   
-  // Route 2 jeeps
-  { id: 'j2-1', routeId: 'route-2', currentPosition: ROUTES[1].path[0], occupancy: 'standing', speed: 14, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 20, capacity: 18 },
-  { id: 'j2-2', routeId: 'route-2', currentPosition: ROUTES[1].path[2], occupancy: 'full', speed: 10, direction: 0, lastUpdate: new Date(), progress: 0.5, passengerCount: 25, capacity: 18 },
+  // Route 2 jeeps (06B - Bulacao-Ayala) - 3 jeeps
+  { id: 'j2-1', routeId: 'route-2', currentPosition: ROUTE_WAYPOINTS[1].path[0], occupancy: 'standing', speed: 14, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 20, capacity: 18 },
+  { id: 'j2-2', routeId: 'route-2', currentPosition: ROUTE_WAYPOINTS[1].path[1], occupancy: 'full', speed: 10, direction: 0, lastUpdate: new Date(), progress: 0.4, passengerCount: 25, capacity: 18 },
+  { id: 'j2-3', routeId: 'route-2', currentPosition: ROUTE_WAYPOINTS[1].path[2], occupancy: 'available', speed: 16, direction: 0, lastUpdate: new Date(), progress: 0.75, passengerCount: 11, capacity: 18 },
   
-  // Route 3 jeeps
-  { id: 'j3-1', routeId: 'route-3', currentPosition: ROUTES[2].path[0], occupancy: 'available', speed: 20, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 10, capacity: 18 },
-  { id: 'j3-2', routeId: 'route-3', currentPosition: ROUTES[2].path[1], occupancy: 'standing', speed: 16, direction: 0, lastUpdate: new Date(), progress: 0.33, passengerCount: 19, capacity: 18 },
-  { id: 'j3-3', routeId: 'route-3', currentPosition: ROUTES[2].path[3], occupancy: 'available', speed: 18, direction: 0, lastUpdate: new Date(), progress: 0.9, passengerCount: 7, capacity: 18 },
-  
-  // Route 4 jeeps
-  { id: 'j4-1', routeId: 'route-4', currentPosition: ROUTES[3].path[0], occupancy: 'standing', speed: 13, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 21, capacity: 18 },
-  { id: 'j4-2', routeId: 'route-4', currentPosition: ROUTES[3].path[2], occupancy: 'available', speed: 17, direction: 0, lastUpdate: new Date(), progress: 0.6, passengerCount: 12, capacity: 18 },
+  // Route 3 jeeps (13C - Mabolo-Pier) - 3 jeeps
+  { id: 'j3-1', routeId: 'route-3', currentPosition: ROUTE_WAYPOINTS[2].path[0], occupancy: 'available', speed: 20, direction: 0, lastUpdate: new Date(), progress: 0, passengerCount: 10, capacity: 18 },
+  { id: 'j3-2', routeId: 'route-3', currentPosition: ROUTE_WAYPOINTS[2].path[2], occupancy: 'standing', speed: 16, direction: 0, lastUpdate: new Date(), progress: 0.45, passengerCount: 19, capacity: 18 },
+  { id: 'j3-3', routeId: 'route-3', currentPosition: ROUTE_WAYPOINTS[2].path[3], occupancy: 'available', speed: 18, direction: 0, lastUpdate: new Date(), progress: 0.8, passengerCount: 7, capacity: 18 },
 ];
 
 // Utility functions

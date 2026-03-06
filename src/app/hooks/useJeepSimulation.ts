@@ -1,19 +1,45 @@
 import { useState, useEffect } from 'react';
-import { Jeep, INITIAL_JEEPS, ROUTES, getRouteById, interpolatePosition, OccupancyLevel } from '../data/jeepney-data';
+import { Jeep, INITIAL_JEEPS, ROUTES, getRouteById, interpolatePosition, OccupancyLevel, initializeRoutesWithRoads, Route } from '../data/jeepney-data';
 
 export function useJeepSimulation() {
   const [jeeps, setJeeps] = useState<Jeep[]>(INITIAL_JEEPS);
+  const [routes, setRoutes] = useState<Route[]>(ROUTES);
+  const [routesInitialized, setRoutesInitialized] = useState(false);
+
+  // Initialize routes with actual road paths on mount
+  useEffect(() => {
+    initializeRoutesWithRoads().then((roadRoutes) => {
+      setRoutes(roadRoutes);
+      setRoutesInitialized(true);
+      
+      // Update initial jeep positions to match the new route paths
+      setJeeps(prevJeeps => 
+        prevJeeps.map(jeep => {
+          const route = roadRoutes.find(r => r.id === jeep.routeId);
+          if (!route) return jeep;
+          
+          const pathIndex = Math.floor(jeep.progress * (route.path.length - 1));
+          return {
+            ...jeep,
+            currentPosition: route.path[pathIndex],
+          };
+        })
+      );
+    });
+  }, []);
 
   useEffect(() => {
+    if (!routesInitialized) return;
+    
     const interval = setInterval(() => {
       setJeeps(prevJeeps => 
         prevJeeps.map(jeep => {
-          const route = getRouteById(jeep.routeId);
+          const route = routes.find(r => r.id === jeep.routeId);
           if (!route) return jeep;
 
-          // Update progress (with speed variation)
-          const speedFactor = (jeep.speed / 15) * 0.002;
-          let newProgress = jeep.progress + speedFactor + (Math.random() * 0.0005);
+          // Update progress (with speed variation) - SLOWED DOWN
+          const speedFactor = (jeep.speed / 15) * 0.0003;
+          let newProgress = jeep.progress + speedFactor + (Math.random() * 0.00005);
           
           // Loop back to start when reaching end
           if (newProgress >= 1) {
@@ -62,7 +88,7 @@ export function useJeepSimulation() {
     }, 100); // Update every 100ms for smooth animation
 
     return () => clearInterval(interval);
-  }, []);
+  }, [routesInitialized, routes]);
 
-  return { jeeps, routes: ROUTES };
+  return { jeeps, routes };
 }

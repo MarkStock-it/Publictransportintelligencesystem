@@ -204,8 +204,8 @@ export function LiveMapView() {
           </div>
         ) : (
           <MapContainer
-            center={[14.6091, 121.0223]}
-            zoom={12}
+            center={[10.3157, 123.8854]}
+            zoom={13}
             className="h-full w-full"
             zoomControl={false}
           >
