@@ -1,6 +1,13 @@
+/* 1️⃣ Leaflet first to prevent PostCSS issues */
 @import 'leaflet/dist/leaflet.css';
+
+/* 2️⃣ Fonts next */
 @import './fonts.css';
+
+/* 3️⃣ Tailwind must be imported after base CSS */
 @import './tailwind.css';
+
+/* 4️⃣ Theme/custom overrides last */
 @import './theme.css';
 
 /* Leaflet popup customization */

@@ -1,4 +1,4 @@
-import { createHashRouter } from "react-router";
+import { createHashRouter } from "react-router-dom"; 
 import { EnhancedLiveMapView } from "./components/EnhancedLiveMapView";
 import { RouteIntelligence } from "./components/RouteIntelligence";
 import { LGUDashboard } from "./components/LGUDashboard";
@@ -8,22 +8,22 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 export const router = createHashRouter([
   {
     path: "/",
-    Component: EnhancedLiveMapView,
+    element: <EnhancedLiveMapView />,
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/intelligence",
-    Component: RouteIntelligence,
+    element: <RouteIntelligence />,
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/dashboard",
-    Component: LGUDashboard,
+    element: <LGUDashboard />,
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/low-bandwidth",
-    Component: LowBandwidthMode,
+    element: <LowBandwidthMode />,
     errorElement: <ErrorBoundary />,
   },
 ], {
