@@ -1,11 +1,11 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import { EnhancedLiveMapView } from "./components/EnhancedLiveMapView";
 import { RouteIntelligence } from "./components/RouteIntelligence";
 import { LGUDashboard } from "./components/LGUDashboard";
 import { LowBandwidthMode } from "./components/LowBandwidthMode";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
     Component: EnhancedLiveMapView,
@@ -26,4 +26,6 @@ export const router = createBrowserRouter([
     Component: LowBandwidthMode,
     errorElement: <ErrorBoundary />,
   },
-]);
+], {
+  basename: "/",
+});

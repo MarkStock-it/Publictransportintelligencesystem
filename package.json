@@ -2,10 +2,13 @@
   "name": "@figma/my-make-file",
   "private": true,
   "version": "0.0.1",
+  "homepage": "https://markstock-it.github.io/Publictransportintelligencesystem",
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "start": "vite",
+    "deploy:pages": "npm run build && rm -rf docs && cp -r dist docs && touch docs/.nojekyll"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
