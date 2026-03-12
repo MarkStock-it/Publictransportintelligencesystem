@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJeepSimulation, type JeepVehicle, type SeatStatus } from '../hooks/useJeepSimulation';
 

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useAuth, type Role } from '../context/AuthContext';
 
 const ROLES: { role: Role; label: string; description: string; destination: string }[] = [
