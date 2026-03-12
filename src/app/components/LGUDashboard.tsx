@@ -12,15 +12,6 @@ import { useJeepSimulation, type JeepVehicle, type SeatStatus } from '../hooks/u
 
 // ─── Color / label maps ───────────────────────────────────────────────────────
 
-<<<<<<< HEAD
-  // Congestion data by route
-  const congestionData = ROUTES.map(route => {
-    const routeJeeps = jeeps.filter(j => j.routeId === route.id);
-    const avgOccupancy = routeJeeps.length > 0
-      ? routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length
-      : 0;
-    const congestionLevel = (avgOccupancy / 18) * 100;
-=======
 const SEAT_COLOR: Record<SeatStatus, string> = {
   many: '#16a34a',
   few:  '#d97706',
@@ -32,7 +23,6 @@ const SEAT_LABEL: Record<SeatStatus, string> = {
   full: 'Full',
 };
 const CHART_COLORS = ['#14b8a6', '#f59e0b', '#8b5cf6'];
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
 
 // ─── Marker icon factories ────────────────────────────────────────────────────
 
@@ -81,20 +71,9 @@ type ClusterMarker = {
 };
 type MapMarker = SingleMarker | ClusterMarker;
 
-<<<<<<< HEAD
-  // Imbalance alerts
-  const imbalanceAlerts = ROUTES.map(route => {
-    const routeJeeps = jeeps.filter(j => j.routeId === route.id);
-    const avgOccupancy = routeJeeps.length > 0
-      ? routeJeeps.reduce((acc, j) => acc + j.passengerCount, 0) / routeJeeps.length
-      : 0;
-    const optimalJeeps = Math.ceil((avgOccupancy * routeJeeps.length) / 15);
-    const imbalance = optimalJeeps - routeJeeps.length;
-=======
 /** Groups nearby jeepneys into clusters at low zoom levels (< 13). */
 function clusterize(jeeps: JeepVehicle[], zoom: number): MapMarker[] {
   if (zoom >= 13) return jeeps.map(j => ({ type: 'single', jeep: j }));
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
 
   const cellDeg = zoom <= 11 ? 0.05 : 0.025;
   const cells = new Map<string, JeepVehicle[]>();

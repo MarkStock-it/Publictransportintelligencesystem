@@ -219,29 +219,6 @@ export function useJeepSimulation(
 
   // Upgrade route geometry to OSRM road-following paths.
   useEffect(() => {
-<<<<<<< HEAD
-    initializeRoutesWithRoads().then((roadRoutes) => {
-      setRoutes(roadRoutes);
-      setRoutesInitialized(true);
-      
-      // Update initial jeep positions to match the new route paths
-      setJeeps(prevJeeps => 
-        prevJeeps.map(jeep => {
-          const route = roadRoutes.find(r => r.id === jeep.routeId);
-          if (!route || route.path.length === 0) return jeep;
-          
-          const pathIndex = Math.min(
-            route.path.length - 1,
-            Math.max(0, Math.floor(jeep.progress * Math.max(1, route.path.length - 1)))
-          );
-          return {
-            ...jeep,
-            currentPosition: route.path[pathIndex],
-          };
-        })
-      );
-    });
-=======
     let active = true;
     initializeRoutesWithRoads()
       .then((roadRoutes) => {
@@ -272,7 +249,6 @@ export function useJeepSimulation(
     return () => {
       active = false;
     };
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
   }, []);
 
   // Move every jeepney along its route polyline every TICK_MS milliseconds.
@@ -292,42 +268,10 @@ export function useJeepSimulation(
           if (progress >= 1) progress -= 1;
           const pos = getPositionFromRoute(route, progress);
 
-<<<<<<< HEAD
-          // Calculate position along path
-          const maxPathIndex = Math.max(1, route.path.length - 1);
-          const pathIndex = Math.min(route.path.length - 1, Math.floor(newProgress * maxPathIndex));
-          const segmentProgress = (newProgress * maxPathIndex) % 1;
-          const start = route.path[pathIndex];
-          const end = route.path[Math.min(pathIndex + 1, route.path.length - 1)];
-          const currentPosition = interpolatePosition(start, end, segmentProgress);
-
-          // Simulate occupancy changes at stops
-          let newOccupancy = jeep.occupancy;
-          let newPassengerCount = jeep.passengerCount;
-          
-          // Check if near a stop
-          const currentStop = Math.floor(newProgress * route.stops.length);
-          const previousStop = Math.floor(jeep.progress * route.stops.length);
-          
-          if (currentStop !== previousStop) {
-            // At a stop, simulate passenger changes
-            const change = Math.floor(Math.random() * 8) - 3;
-            newPassengerCount = Math.max(0, Math.min(jeep.capacity + 7, newPassengerCount + change));
-            
-            if (newPassengerCount <= jeep.capacity * 0.6) {
-              newOccupancy = 'available';
-            } else if (newPassengerCount <= jeep.capacity + 3) {
-              newOccupancy = 'standing';
-            } else {
-              newOccupancy = 'full';
-            }
-          }
-=======
           // Passenger churn: ±1–3 passengers per tick
           const churn = Math.floor(Math.random() * 5) - 2;
           const passengerCount = Math.max(0, Math.min(CAPACITY, jeep.passengerCount + churn));
           const seatStatus = seatStatusFromCount(passengerCount, CAPACITY);
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
 
           return {
             ...jeep,

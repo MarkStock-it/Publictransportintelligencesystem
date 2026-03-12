@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-import { createHashRouter } from "react-router-dom"; 
-import { EnhancedLiveMapView } from "./components/EnhancedLiveMapView";
-import { RouteIntelligence } from "./components/RouteIntelligence";
-=======
-import { createBrowserRouter, Navigate } from "react-router";
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
+import { createHashRouter, Navigate } from "react-router-dom";
 import { LGUDashboard } from "./components/LGUDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -12,29 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import DriverPage from "./pages/DriverPage";
 import CommuterPage from "./pages/CommuterPage";
 
-<<<<<<< HEAD
 export const router = createHashRouter([
-  {
-    path: "/",
-    element: <EnhancedLiveMapView />,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/intelligence",
-    element: <RouteIntelligence />,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/dashboard",
-    element: <LGUDashboard />,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/low-bandwidth",
-    element: <LowBandwidthMode />,
-    errorElement: <ErrorBoundary />,
-=======
-export const router = createBrowserRouter([
   // Public: login
   {
     path: "/login",
@@ -73,7 +45,6 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <Navigate to="/commuter" replace />,
->>>>>>> 58da5b23 (Implement role-based PTIS dashboards and map simulation updates)
   },
 ], {
   basename: "/",
