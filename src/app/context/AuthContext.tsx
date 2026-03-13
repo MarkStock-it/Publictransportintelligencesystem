@@ -34,6 +34,9 @@ const AuthContext = createContext<AuthState | null>(null);
 
 const STORAGE_TOKEN_KEY = 'ptis_token';
 const STORAGE_USER_KEY = 'ptis_user';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
 const getStoredUser = (): AuthUser | null => {
   const raw = localStorage.getItem(STORAGE_USER_KEY);
@@ -63,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string): Promise<LoginResult> => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -77,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistSession(data.token, data.user);
       return { ok: true, role: data.user.role };
     } catch {
-      return { ok: false, error: 'Backend unavailable. Start the backend server.' };
+      return { ok: false, error: 'Backend unavailable. Check backend URL/server status.' };
     }
   };
 
@@ -88,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: Role;
   }): Promise<LoginResult> => {
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -102,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persistSession(data.token, data.user);
       return { ok: true, role: data.user.role };
     } catch {
-      return { ok: false, error: 'Backend unavailable. Start the backend server.' };
+      return { ok: false, error: 'Backend unavailable. Check backend URL/server status.' };
     }
   };
 
@@ -111,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!activeToken) return;
 
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(apiUrl('/api/auth/me'), {
         headers: { Authorization: `Bearer ${activeToken}` },
       });
 

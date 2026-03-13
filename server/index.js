@@ -6,8 +6,28 @@ import jwt from "jsonwebtoken";
 const app = express();
 const port = Number(process.env.PORT) || 5001;
 const jwtSecret = process.env.JWT_SECRET || "dev-ptis-secret-change-me";
+const allowedOrigins = (process.env.CLIENT_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: true, credentials: false }));
+app.use(cors({
+  origin(origin, callback) {
+    // Allow non-browser/health-check requests with no Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error("CORS origin not allowed"));
+  },
+  credentials: false,
+}));
 app.use(express.json());
 
 const allowedRoles = ["commuter", "driver", "lgu"];

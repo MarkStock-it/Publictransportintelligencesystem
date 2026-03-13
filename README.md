@@ -42,6 +42,14 @@ npm run dev
 
 Backend defaults to `http://localhost:5001` and frontend calls `/api/*` via Vite proxy in dev.
 
+### Deploy backend to internet (Render)
+
+1. Deploy backend using `render.yaml`.
+2. Set Render env var: `CLIENT_ORIGIN=https://markstock-it.github.io`.
+3. Set frontend build env var: `VITE_API_BASE_URL=https://<your-backend-domain>`.
+
+Detailed guide: `BACKEND_DEPLOY.md`
+
 ### Demo users
 
 - commuter: `commuter1 / commuter123`
