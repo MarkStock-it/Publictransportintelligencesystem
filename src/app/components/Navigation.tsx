@@ -23,7 +23,7 @@ export function Navigation() {
               <Map className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">JeepWise</h1>
+              <h1 className="text-xl font-bold">LarGo</h1>
               <p className="text-xs text-blue-200">See your ride before it sees you</p>
             </div>
           </div>

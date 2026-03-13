@@ -56,6 +56,7 @@ const CAPACITY = 18;
 /** Simulation tick — jeepneys update position every 3 seconds. */
 const TICK_MS = 3_000;
 const TALAMBAN_ROUTE_IDS = ['route-talamban-main', 'route-talamban-banilad'] as const;
+const DRIVER_SPACE_STATUS_KEY = 'ptis_driver_space_status';
 
 // Talamban corridor routes around Gov. M. Cuenco, USC Talamban, and Banilad junction.
 const TALAMBAN_ROUTES: Route[] = [
@@ -133,17 +134,21 @@ export function haversineKm(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function seatStatusFromCount(count: number, cap: number): SeatStatus {
-  const ratio = count / cap;
-  if (ratio >= 1) return 'full';
-  if (ratio >= 0.6) return 'few';
-  return 'many';
-}
-
 function occupancyFromSeatStatus(s: SeatStatus): 'available' | 'standing' | 'full' {
   if (s === 'many') return 'available';
   if (s === 'few') return 'standing';
   return 'full';
+}
+
+function getDriverSeatStatus(): SeatStatus {
+  if (typeof window === 'undefined') return 'many';
+  const stored = localStorage.getItem(DRIVER_SPACE_STATUS_KEY);
+  return stored === 'full' ? 'full' : 'many';
+}
+
+function passengerCountFromSeatStatus(status: SeatStatus): number {
+  if (status === 'full') return CAPACITY;
+  return 10;
 }
 
 function getPositionFromRoute(route: Route, progress: number): { lat: number; lng: number } {
@@ -179,8 +184,8 @@ function spawnJeepneys(routes: Route[]): SimulatedJeep[] {
 
   const buildJeep = (routeEntry: Route, progress: number): SimulatedJeep => {
     const pos = getPositionFromRoute(routeEntry, progress);
-    const passengerCount = Math.floor(Math.random() * (CAPACITY + 1));
-    const seatStatus = seatStatusFromCount(passengerCount, CAPACITY);
+    const seatStatus = getDriverSeatStatus();
+    const passengerCount = passengerCountFromSeatStatus(seatStatus);
     const speed = 10 + Math.random() * 12;
 
     return {
@@ -321,11 +326,8 @@ export function useJeepSimulation(
           }
 
           const pos = getPositionFromRoute(route, progress);
-
-          // Passenger churn: ±1–3 passengers per tick
-          const churn = Math.floor(Math.random() * 5) - 2;
-          const passengerCount = Math.max(0, Math.min(CAPACITY, jeep.passengerCount + churn));
-          const seatStatus = seatStatusFromCount(passengerCount, CAPACITY);
+          const seatStatus = getDriverSeatStatus();
+          const passengerCount = passengerCountFromSeatStatus(seatStatus);
 
           return {
             ...jeep,

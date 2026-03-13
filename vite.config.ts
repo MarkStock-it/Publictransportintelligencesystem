@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => ({
   base: mode === "production" ? "/Publictransportintelligencesystem/" : "/",
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://localhost:5001",

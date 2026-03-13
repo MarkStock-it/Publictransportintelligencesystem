@@ -80,7 +80,7 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">PTIS</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">LarGo</h1>
           <p className="mt-1 text-sm text-gray-500">Public Transport Intelligence System</p>
         </div>
 

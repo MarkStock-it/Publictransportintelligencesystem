@@ -16,7 +16,7 @@ export default function DriverPage() {
       {/* Minimal header — no system-wide data visible to driver */}
       <header className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-100 shadow-sm">
         <div>
-          <span className="text-sm font-bold text-gray-800">PTIS</span>
+          <span className="text-sm font-bold text-gray-800">LarGo</span>
           <span className="ml-2 text-xs text-gray-400">Driver</span>
         </div>
         <button

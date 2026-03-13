@@ -1,4 +1,7 @@
 import { useDriverLocation } from '../context/DriverLocationContext';
+import { useEffect, useState } from 'react';
+
+const DRIVER_SPACE_STATUS_KEY = 'ptis_driver_space_status';
 
 function fmt(n: number, decimals = 6): string {
   return n.toFixed(decimals);
@@ -6,6 +9,14 @@ function fmt(n: number, decimals = 6): string {
 
 export function DriverDashboard() {
   const { isSharing, location, error, startSharing, stopSharing } = useDriverLocation();
+  const [driverSeatStatus, setDriverSeatStatus] = useState<'space' | 'full'>(() => {
+    const stored = localStorage.getItem(DRIVER_SPACE_STATUS_KEY);
+    return stored === 'full' ? 'full' : 'space';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(DRIVER_SPACE_STATUS_KEY, driverSeatStatus);
+  }, [driverSeatStatus]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6 select-none">
@@ -43,6 +54,37 @@ export function DriverDashboard() {
       >
         {isSharing ? 'Stop\nSharing' : 'Start\nSharing'}
       </button>
+
+      <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Passenger Space Status</p>
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
+          <button
+            onClick={() => setDriverSeatStatus('space')}
+            aria-pressed={driverSeatStatus === 'space'}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              driverSeatStatus === 'space'
+                ? 'bg-green-600 text-white shadow'
+                : 'text-gray-600 hover:bg-white'
+            }`}
+          >
+            Space Available
+          </button>
+          <button
+            onClick={() => setDriverSeatStatus('full')}
+            aria-pressed={driverSeatStatus === 'full'}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              driverSeatStatus === 'full'
+                ? 'bg-red-600 text-white shadow'
+                : 'text-gray-600 hover:bg-white'
+            }`}
+          >
+            Full
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">
+          Current: <span className="font-semibold text-gray-700">{driverSeatStatus === 'full' ? 'Full' : 'Space Available'}</span>
+        </p>
+      </div>
 
       {/* ── Coordinates readout ── */}
       <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-6 py-4 space-y-3">

@@ -33,19 +33,19 @@ const CEBU_FALLBACK: [number, number] = [10.3157, 123.8854];
 
 const SEAT_COLOR: Record<SeatStatus, string> = {
   many: '#16a34a',
-  few: '#d97706',
+  few: '#16a34a',
   full: '#dc2626',
 };
 
 const SEAT_LABEL: Record<SeatStatus, string> = {
   many: 'Seats available',
-  few: 'Few seats left',
+  few: 'Seats available',
   full: 'Full',
 };
 
 const SEAT_BG: Record<SeatStatus, string> = {
   many: 'bg-green-100 text-green-800',
-  few: 'bg-amber-100 text-amber-800',
+  few: 'bg-green-100 text-green-800',
   full: 'bg-red-100 text-red-800',
 };
 
@@ -231,7 +231,7 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
       {/* Top status bar */}
       <div className="absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">PTIS</span>
+          <span className="text-sm font-semibold text-gray-800">LarGo</span>
           <span className="text-xs text-gray-400">Commuter View</span>
         </div>
         <div className="flex items-center gap-2">
@@ -345,9 +345,9 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
 
       {/* Seat status legend */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg px-4 py-2">
-        {(Object.entries(SEAT_COLOR) as [SeatStatus, string][]).map(([status, color]) => (
+        {(['many', 'full'] as const).map((status) => (
           <div key={status} className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
             <span className="text-xs text-gray-600 capitalize">{SEAT_LABEL[status]}</span>
           </div>
         ))}
