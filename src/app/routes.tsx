@@ -17,8 +17,11 @@ export const router = createHashRouter([
   // Public: commuter map view
   {
     path: "/commuter",
-    Component: CommuterPage,
+    element: <ProtectedRoute requiredRole="commuter" />,
     errorElement: <ErrorBoundary />,
+    children: [
+      { index: true, Component: CommuterPage },
+    ],
   },
 
   // Protected: driver role
@@ -44,7 +47,7 @@ export const router = createHashRouter([
   // Root redirect
   {
     path: "/",
-    element: <Navigate to="/commuter" replace />,
+    element: <Navigate to="/login" replace />,
   },
 ], {
   basename: "/",

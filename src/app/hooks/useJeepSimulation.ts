@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ROUTES,
   Route,
+  fetchRouteFromOSRM,
   initializeRoutesWithRoads,
   interpolatePosition,
 } from '../data/jeepney-data';
@@ -42,6 +43,8 @@ export interface JeepVehicle {
 interface SimulatedJeep extends JeepVehicle {
   /** 0..1 progress along the assigned route polyline */
   progress: number;
+  /** Movement direction along the polyline. */
+  direction: 1 | -1;
 }
 
 // ─── Internal constants ───────────────────────────────────────────────────────
@@ -52,29 +55,53 @@ const TALAMBAN_SEED_COUNT = 5;
 const CAPACITY = 18;
 /** Simulation tick — jeepneys update position every 3 seconds. */
 const TICK_MS = 3_000;
-const TALAMBAN_ROUTE_ID = 'route-talamban-main';
+const TALAMBAN_ROUTE_IDS = ['route-talamban-main', 'route-talamban-banilad'] as const;
 
-// Test corridor near USC Talamban along Gov. M. Cuenco Ave (main road)
-const TALAMBAN_TEST_ROUTE: Route = {
-  id: TALAMBAN_ROUTE_ID,
-  name: '13T - Talamban Main Road',
-  color: '#22c55e',
-  path: [
-    { lat: 10.3439, lng: 123.9094 },
-    { lat: 10.3475, lng: 123.9106 },
-    { lat: 10.3515, lng: 123.9117 },
-    { lat: 10.3553, lng: 123.9124 },
-    { lat: 10.3586, lng: 123.9130 },
-    { lat: 10.3620, lng: 123.9138 },
-  ],
-  stops: [
-    { id: 't-1', name: 'Bacayan Junction', coordinates: { lat: 10.3439, lng: 123.9094 } },
-    { id: 't-2', name: 'USC Talamban', coordinates: { lat: 10.3553, lng: 123.9124 } },
-    { id: 't-3', name: 'Pit-os', coordinates: { lat: 10.3620, lng: 123.9138 } },
-  ],
-  avgTripDuration: 18,
-  peakHours: [7, 8, 9, 17, 18, 19],
-};
+// Talamban corridor routes around Gov. M. Cuenco, USC Talamban, and Banilad junction.
+const TALAMBAN_ROUTES: Route[] = [
+  {
+    id: TALAMBAN_ROUTE_IDS[0],
+    name: '13T - Talamban - Banilad',
+    color: '#22c55e',
+    path: [
+      { lat: 10.3374, lng: 123.9063 }, // Banilad Town Centre
+      { lat: 10.3438, lng: 123.9092 }, // Gaisano Country Mall area
+      { lat: 10.3489, lng: 123.9108 }, // Talamban proper
+      { lat: 10.3553, lng: 123.9124 }, // USC Talamban
+      { lat: 10.3607, lng: 123.9135 }, // Canduman side
+      { lat: 10.3660, lng: 123.9151 }, // Pit-os approach
+    ],
+    stops: [
+      { id: 't1-1', name: 'Banilad Town Centre', coordinates: { lat: 10.3374, lng: 123.9063 } },
+      { id: 't1-2', name: 'Country Mall', coordinates: { lat: 10.3438, lng: 123.9092 } },
+      { id: 't1-3', name: 'USC Talamban', coordinates: { lat: 10.3553, lng: 123.9124 } },
+      { id: 't1-4', name: 'Pit-os Junction', coordinates: { lat: 10.3660, lng: 123.9151 } },
+    ],
+    avgTripDuration: 22,
+    peakHours: [6, 7, 8, 9, 16, 17, 18, 19],
+  },
+  {
+    id: TALAMBAN_ROUTE_IDS[1],
+    name: '62B - Talamban - IT Park',
+    color: '#06b6d4',
+    path: [
+      { lat: 10.3553, lng: 123.9124 }, // USC Talamban
+      { lat: 10.3494, lng: 123.9112 }, // Talamban proper
+      { lat: 10.3438, lng: 123.9092 }, // Country Mall
+      { lat: 10.3361, lng: 123.9053 }, // Banilad flyover area
+      { lat: 10.3310, lng: 123.9017 }, // Cebu IT Park entry
+      { lat: 10.3284, lng: 123.9051 }, // IT Park terminal loop
+    ],
+    stops: [
+      { id: 't2-1', name: 'USC Talamban', coordinates: { lat: 10.3553, lng: 123.9124 } },
+      { id: 't2-2', name: 'Talamban Proper', coordinates: { lat: 10.3494, lng: 123.9112 } },
+      { id: 't2-3', name: 'Banilad Flyover', coordinates: { lat: 10.3361, lng: 123.9053 } },
+      { id: 't2-4', name: 'Cebu IT Park', coordinates: { lat: 10.3284, lng: 123.9051 } },
+    ],
+    avgTripDuration: 28,
+    peakHours: [6, 7, 8, 17, 18, 19, 20],
+  },
+];
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
@@ -136,18 +163,18 @@ function getPositionFromRoute(route: Route, progress: number): { lat: number; ln
 }
 
 function withTalambanRoute(baseRoutes: Route[]): Route[] {
-  if (baseRoutes.some((r) => r.id === TALAMBAN_ROUTE_ID)) {
-    return baseRoutes;
-  }
-  return [...baseRoutes, TALAMBAN_TEST_ROUTE];
+  const existingIds = new Set(baseRoutes.map((r) => r.id));
+  const missingTalambanRoutes = TALAMBAN_ROUTES.filter((r) => !existingIds.has(r.id));
+  if (missingTalambanRoutes.length === 0) return baseRoutes;
+  return [...baseRoutes, ...missingTalambanRoutes];
 }
 
 /** Spawn 20 anonymous jeepneys, guaranteeing 5 around Talamban for alarm tests. */
 function spawnJeepneys(routes: Route[]): SimulatedJeep[] {
   if (routes.length === 0) return [];
 
-  const talambanRoute = routes.find((r) => r.id === TALAMBAN_ROUTE_ID);
-  const forcedCount = talambanRoute ? TALAMBAN_SEED_COUNT : 0;
+  const talambanRoutes = routes.filter((r) => TALAMBAN_ROUTE_IDS.includes(r.id as (typeof TALAMBAN_ROUTE_IDS)[number]));
+  const forcedCount = talambanRoutes.length > 0 ? TALAMBAN_SEED_COUNT : 0;
   const remainingCount = Math.max(0, JEEP_COUNT - forcedCount);
 
   const buildJeep = (routeEntry: Route, progress: number): SimulatedJeep => {
@@ -170,14 +197,16 @@ function spawnJeepneys(routes: Route[]): SimulatedJeep[] {
       lastUpdate: Date.now(),
       speed,
       progress,
+      direction: Math.random() > 0.5 ? 1 : -1,
     };
   };
 
-  const talambanJeeps: SimulatedJeep[] = talambanRoute
+  const talambanJeeps: SimulatedJeep[] = talambanRoutes.length > 0
     ? Array.from({ length: forcedCount }, (_, idx) => {
-        // Spread test jeepneys along the Talamban main road corridor.
+        // Spread test jeepneys across Talamban routes for route-specific checks.
+        const routeEntry = talambanRoutes[idx % talambanRoutes.length];
         const progress = (idx + 1) / (forcedCount + 1);
-        return buildJeep(talambanRoute, progress);
+        return buildJeep(routeEntry, progress);
       })
     : [];
 
@@ -221,9 +250,24 @@ export function useJeepSimulation(
   useEffect(() => {
     let active = true;
     initializeRoutesWithRoads()
-      .then((roadRoutes) => {
+      .then(async (roadRoutes) => {
         if (!active) return;
-        const mergedRoutes = withTalambanRoute(roadRoutes);
+
+        // Snap Talamban overlay routes to real roads as well.
+        const talambanRoadRoutes = await Promise.all(
+          TALAMBAN_ROUTES.map(async (route) => {
+            const roadPath = await fetchRouteFromOSRM(route.path);
+            return {
+              ...route,
+              path: roadPath.length > 1 ? roadPath : route.path,
+            };
+          }),
+        );
+
+        const mergedRoutes = withTalambanRoute([
+          ...roadRoutes,
+          ...talambanRoadRoutes,
+        ]);
         setRoutes(mergedRoutes);
         // Re-project each jeep to its exact position on the updated road path.
         setAllJeeps(prev =>
@@ -264,8 +308,18 @@ export function useJeepSimulation(
           const speedDrift = (Math.random() - 0.5) * 0.8;
           const speed = Math.max(8, Math.min(26, jeep.speed + speedDrift));
           const progressStep = (speed / 15) * 0.006;
-          let progress = jeep.progress + progressStep;
-          if (progress >= 1) progress -= 1;
+          let direction = jeep.direction;
+          let progress = jeep.progress + progressStep * direction;
+
+          // Reflect at route ends to avoid teleporting back to route start.
+          if (progress >= 1) {
+            progress = 1;
+            direction = -1;
+          } else if (progress <= 0) {
+            progress = 0;
+            direction = 1;
+          }
+
           const pos = getPositionFromRoute(route, progress);
 
           // Passenger churn: ±1–3 passengers per tick
@@ -285,6 +339,7 @@ export function useJeepSimulation(
             lastUpdate: Date.now(),
             speed,
             progress,
+            direction,
           };
         }),
       );

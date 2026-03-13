@@ -20,6 +20,36 @@ JeepWise is not just a jeepney tracker—it's a **Public Transport Intelligence 
 
 ---
 
+## 🔐 Simple Backend Auth (New)
+
+The project now includes a lightweight backend with role-based auth for:
+- `commuter`
+- `driver`
+- `lgu`
+
+### Run locally
+
+```bash
+npm run dev:full
+```
+
+Or run separately:
+
+```bash
+npm run server
+npm run dev
+```
+
+Backend defaults to `http://localhost:5001` and frontend calls `/api/*` via Vite proxy in dev.
+
+### Demo users
+
+- commuter: `commuter1 / commuter123`
+- driver: `driver1 / driver123`
+- lgu: `lgu1 / lgu123`
+
+---
+
 ## 🏗️ System Architecture
 
 ### Four Core Views

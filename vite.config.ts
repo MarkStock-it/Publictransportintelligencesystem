@@ -6,4 +6,12 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig(({ mode }) => ({
   base: mode === "production" ? "/Publictransportintelligencesystem/" : "/",
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+      },
+    },
+  },
 }))

@@ -1,34 +1,64 @@
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, type Role } from '../context/AuthContext';
 
-const ROLES: { role: Role; label: string; description: string; destination: string }[] = [
-  {
-    role: 'commuter',
-    label: 'Commuter',
-    description: 'View live jeepney map & nearby routes',
-    destination: '/commuter',
-  },
-  {
-    role: 'driver',
-    label: 'Driver',
-    description: 'Driver dashboard, active trip & route info',
-    destination: '/driver',
-  },
-  {
-    role: 'lgu',
-    label: 'LGU Officer',
-    description: 'Fleet analytics, demand forecasts & route management',
-    destination: '/lgu',
-  },
-];
+const DESTINATION_BY_ROLE: Record<Role, string> = {
+  commuter: '/commuter',
+  driver: '/driver',
+  lgu: '/lgu',
+};
+
+const DEMO_CREDENTIALS = [
+  { role: 'commuter', username: 'commuter1', password: 'commuter123' },
+  { role: 'driver', username: 'driver1', password: 'driver123' },
+  { role: 'lgu', username: 'lgu1', password: 'lgu123' },
+] as const;
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, register, role: authRole } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<Role>('commuter');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (role: Role, destination: string) => {
-    login(role);
-    navigate(destination, { replace: true });
+  const submitLabel = useMemo(() => (mode === 'login' ? 'Sign in' : 'Create account'), [mode]);
+
+  useEffect(() => {
+    if (authRole) {
+      navigate(DESTINATION_BY_ROLE[authRole], { replace: true });
+    }
+  }, [authRole, navigate]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    const result = mode === 'login'
+      ? await login(username, password)
+      : await register({ username, password, name, role });
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setError(result.error ?? 'Authentication failed');
+      return;
+    }
+
+    navigate(DESTINATION_BY_ROLE[result.role ?? role], { replace: true });
+  };
+
+  const fillDemo = (credentials: typeof DEMO_CREDENTIALS[number]) => {
+    setMode('login');
+    setRole(credentials.role);
+    setUsername(credentials.username);
+    setPassword(credentials.password);
+    setName('');
+    setError(null);
   };
 
   return (
@@ -54,25 +84,109 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-gray-500">Public Transport Intelligence System</p>
         </div>
 
-        <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-            Select your role
-          </p>
-          {ROLES.map(({ role, label, description, destination }) => (
+        <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-5 space-y-4">
+          <div className="flex rounded-lg border border-gray-200 p-1">
             <button
-              key={role}
-              onClick={() => handleLogin(role, destination)}
-              className="w-full flex flex-col items-start px-4 py-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-left"
+              onClick={() => setMode('login')}
+              className={`flex-1 text-sm py-2 rounded-md transition-colors ${
+                mode === 'login' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              }`}
             >
-              <span className="text-sm font-semibold text-gray-900">{label}</span>
-              <span className="text-xs text-gray-500 mt-0.5">{description}</span>
+              Login
             </button>
-          ))}
+            <button
+              onClick={() => setMode('register')}
+              className={`flex-1 text-sm py-2 rounded-md transition-colors ${
+                mode === 'register' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              Register
+            </button>
+          </div>
+
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Role</span>
+              <select
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                value={role}
+                onChange={(event) => setRole(event.target.value as Role)}
+              >
+                <option value="commuter">Commuter</option>
+                <option value="driver">Driver</option>
+                <option value="lgu">LGU Officer</option>
+              </select>
+            </label>
+
+            {mode === 'register' && (
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Full name</span>
+                <input
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Juan Dela Cruz"
+                  required
+                />
+              </label>
+            )}
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Username</span>
+              <input
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="driver1"
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Password</span>
+              <input
+                type="password"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+            </label>
+
+            {error && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2 border border-red-100">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-lg bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            >
+              {isSubmitting ? 'Please wait...' : submitLabel}
+            </button>
+          </form>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Demo users</p>
+            <div className="grid grid-cols-1 gap-2">
+              {DEMO_CREDENTIALS.map((creds) => (
+                <button
+                  key={creds.role}
+                  type="button"
+                  onClick={() => fillDemo(creds)}
+                  className="w-full text-left border border-gray-200 rounded-lg px-3 py-2 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900 capitalize">{creds.role}</span>
+                  <span className="block text-xs text-gray-500">{creds.username} / {creds.password}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-gray-400">
-          Demo mode — no real authentication
-        </p>
+        <p className="text-center text-xs text-gray-400">Simple backend auth is now enabled</p>
       </div>
     </div>
   );
