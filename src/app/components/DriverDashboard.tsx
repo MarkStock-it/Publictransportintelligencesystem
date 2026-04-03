@@ -59,19 +59,19 @@ export function DriverDashboard() {
   }, [isSharing, location, driverSeatStatus, user?.jeepId, user?.route]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6 select-none">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-52px)] gap-6 px-6 py-8 select-none bg-slate-950">
 
       {/* ── Status pill ── */}
       <div
-        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors duration-300 ${
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 border ${
           isSharing
-            ? 'bg-green-100 text-green-700'
-            : 'bg-gray-100 text-gray-500'
+            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-lg shadow-emerald-900/30'
+            : 'bg-white/[0.06] text-white/30 border-white/10'
         }`}
       >
         <span
-          className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
-            isSharing ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+          className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+            isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'
           }`}
         />
         {isSharing ? 'Online' : 'Offline'}
@@ -82,41 +82,41 @@ export function DriverDashboard() {
         onClick={isSharing ? stopSharing : startSharing}
         aria-pressed={isSharing}
         className={`
-          w-48 h-48 rounded-full text-white text-xl font-bold shadow-lg
+          w-52 h-52 rounded-full text-white text-xl font-black tracking-wide shadow-2xl
           transition-all duration-200 active:scale-95 focus:outline-none
-          focus-visible:ring-4 focus-visible:ring-offset-2
+          focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950
           ${
             isSharing
-              ? 'bg-red-500 hover:bg-red-600 focus-visible:ring-red-400'
-              : 'bg-green-500 hover:bg-green-600 focus-visible:ring-green-400'
+              ? 'bg-gradient-to-br from-red-500 to-rose-600 focus-visible:ring-red-400 shadow-red-900/50'
+              : 'bg-gradient-to-br from-emerald-500 to-teal-600 focus-visible:ring-emerald-400 shadow-emerald-900/50'
           }
         `}
       >
         {isSharing ? 'Stop\nSharing' : 'Start\nSharing'}
       </button>
 
-      <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Driver Profile</p>
+      <div className="w-full max-w-xs bg-white/[0.05] border border-white/10 rounded-2xl px-4 py-4 space-y-2 backdrop-blur-sm">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Driver Profile</p>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">Jeep ID</span>
-          <span className="font-mono font-semibold text-gray-900">{user?.jeepId ?? 'Not set'}</span>
+          <span className="text-white/40 text-xs">Jeep ID</span>
+          <span className="font-mono font-bold text-white">{user?.jeepId ?? 'Not set'}</span>
         </div>
         <div className="flex items-start justify-between gap-3 text-sm">
-          <span className="text-gray-500">Route</span>
-          <span className="font-medium text-right text-gray-800">{user?.route ?? 'Not set'}</span>
+          <span className="text-white/40 text-xs flex-shrink-0">Route</span>
+          <span className="font-medium text-right text-white/80 text-xs">{user?.route ?? 'Not set'}</span>
         </div>
       </div>
 
-      <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Passenger Space Status</p>
-        <div className="grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
+      <div className="w-full max-w-xs bg-white/[0.05] border border-white/10 rounded-2xl px-4 py-4 space-y-3 backdrop-blur-sm">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Passenger Space</p>
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-white/[0.05] p-1">
           <button
             onClick={() => setDriverSeatStatus('space')}
             aria-pressed={driverSeatStatus === 'space'}
             className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               driverSeatStatus === 'space'
-                ? 'bg-green-600 text-white shadow'
-                : 'text-gray-600 hover:bg-white'
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/40'
+                : 'text-white/40 hover:bg-white/10'
             }`}
           >
             Space Available
@@ -126,20 +126,20 @@ export function DriverDashboard() {
             aria-pressed={driverSeatStatus === 'full'}
             className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               driverSeatStatus === 'full'
-                ? 'bg-red-600 text-white shadow'
-                : 'text-gray-600 hover:bg-white'
+                ? 'bg-red-500 text-white shadow-lg shadow-red-900/40'
+                : 'text-white/40 hover:bg-white/10'
             }`}
           >
             Full
           </button>
         </div>
-        <p className="text-xs text-gray-500">
-          Current: <span className="font-semibold text-gray-700">{driverSeatStatus === 'full' ? 'Full' : 'Space Available'}</span>
+        <p className="text-xs text-white/30">
+          Currently: <span className="font-semibold text-white/60">{driverSeatStatus === 'full' ? 'Full' : 'Space Available'}</span>
         </p>
       </div>
 
       {/* ── Coordinates readout ── */}
-      <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-6 py-4 space-y-3">
+      <div className="w-full max-w-xs bg-white/[0.05] border border-white/10 rounded-2xl px-6 py-4 space-y-3 backdrop-blur-sm">
         {location ? (
           <>
             <CoordRow label="Latitude"  value={fmt(location.lat)} />
@@ -156,7 +156,7 @@ export function DriverDashboard() {
             />
           </>
         ) : (
-          <p className="text-center text-sm text-gray-400 py-2">
+          <p className="text-center text-sm text-white/30 py-2">
             {isSharing ? 'Acquiring GPS…' : 'Not sharing location'}
           </p>
         )}
@@ -166,7 +166,7 @@ export function DriverDashboard() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 max-w-xs w-full bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"
+          className="flex items-start gap-2 max-w-xs w-full bg-red-500/10 border border-red-400/25 text-red-300 text-sm rounded-xl px-4 py-3"
         >
           <svg
             className="w-4 h-4 mt-0.5 shrink-0"
@@ -200,10 +200,10 @@ function CoordRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className={`text-xs font-medium uppercase tracking-wider ${muted ? 'text-gray-400' : 'text-gray-500'}`}>
+      <span className={`text-xs font-medium uppercase tracking-wider ${muted ? 'text-white/20' : 'text-white/40'}`}>
         {label}
       </span>
-      <span className={`font-mono text-sm ${muted ? 'text-gray-400' : 'text-gray-900 font-semibold'}`}>
+      <span className={`font-mono text-sm ${muted ? 'text-white/25' : 'text-white font-semibold'}`}>
         {value}
       </span>
     </div>

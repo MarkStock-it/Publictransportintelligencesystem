@@ -81,165 +81,159 @@ export default function LoginPage() {
     setError(null);
   };
 
+  const ROLE_META: Record<Role, { label: string; emoji: string; desc: string }> = {
+    commuter: { label: 'Commuter', emoji: '🚌', desc: 'Find your ride' },
+    driver:   { label: 'Driver',   emoji: '🚐', desc: 'Share your location' },
+    lgu:      { label: 'LGU',      emoji: '🏛️', desc: 'Monitor routes' },
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-600 mb-3">
-            <svg
-              className="w-7 h-7 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7h8M8 11h4m-6 8l1.5-4.5M16 19l1.5-4.5M3 7h18l-2 12H5L3 7z"
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 px-4 py-10 relative overflow-hidden">
+      {/* Ambient glows */}
+      <div className="pointer-events-none absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-indigo-600/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-blue-600/15 blur-[120px]" />
+
+      <div className="relative z-10 w-full max-w-sm space-y-5">
+
+        {/* Brand */}
+        <div className="text-center space-y-1 pb-1">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/25 mb-3 shadow-xl shadow-indigo-950">
+            <svg className="w-8 h-8 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M8 7h8M8 11h4m-6 8l1.5-4.5M16 19l1.5-4.5M3 7h18l-2 12H5L3 7z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">LarGo</h1>
-          <p className="mt-1 text-sm text-gray-500">Public Transport Intelligence System</p>
+          <h1 className="text-4xl font-black text-white tracking-tight">LarGo</h1>
+          <p className="text-indigo-300/60 text-sm">See your ride before it sees you</p>
         </div>
 
-        <div className="bg-white shadow-sm border border-gray-200 rounded-xl p-5 space-y-4">
-          <div className="flex rounded-lg border border-gray-200 p-1">
+        {/* Role picker */}
+        <div className="grid grid-cols-3 gap-2">
+          {(Object.entries(ROLE_META) as [Role, typeof ROLE_META[Role]][]).map(([r, meta]) => (
             <button
-              onClick={() => setMode('login')}
-              className={`flex-1 text-sm py-2 rounded-md transition-colors ${
-                mode === 'login' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+              key={r}
+              type="button"
+              onClick={() => setRole(r)}
+              className={`flex flex-col items-center gap-1 py-3 rounded-xl text-center transition-all duration-150 border ${
+                role === r
+                  ? 'bg-indigo-500/30 border-indigo-400/60 text-white shadow-lg shadow-indigo-900/40'
+                  : 'bg-white/[0.04] border-white/10 text-white/40 hover:bg-white/[0.08] hover:text-white/60'
               }`}
             >
-              Login
+              <span className="text-xl leading-none">{meta.emoji}</span>
+              <span className="text-[11px] font-bold tracking-wide">{meta.label}</span>
             </button>
-            <button
-              onClick={() => setMode('register')}
-              className={`flex-1 text-sm py-2 rounded-md transition-colors ${
-                mode === 'register' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              Register
-            </button>
+          ))}
+        </div>
+
+        {/* Glass card */}
+        <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
+
+          {/* Login / Register toggle */}
+          <div className="flex gap-5 border-b border-white/10 pb-3">
+            {(['login', 'register'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`text-sm font-semibold pb-0.5 border-b-2 transition-all ${
+                  mode === m
+                    ? 'text-white border-indigo-400'
+                    : 'text-white/30 border-transparent hover:text-white/50'
+                }`}
+              >
+                {m === 'login' ? 'Sign in' : 'Create account'}
+              </button>
+            ))}
           </div>
 
           <form className="space-y-3" onSubmit={handleSubmit}>
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Role</span>
-              <select
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                value={role}
-                onChange={(event) => setRole(event.target.value as Role)}
-              >
-                <option value="commuter">Commuter</option>
-                <option value="driver">Driver</option>
-                <option value="lgu">LGU Officer</option>
-              </select>
-            </label>
-
             {mode === 'register' && (
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Full name</span>
-                <input
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Juan Dela Cruz"
-                  required
-                />
-              </label>
+              <input
+                className="w-full rounded-xl bg-white/[0.07] border border-white/15 text-white placeholder-white/25 px-4 py-3 text-sm focus:outline-none focus:border-indigo-400/70 transition-colors"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full name"
+                required
+              />
             )}
 
             {mode === 'register' && role === 'driver' && (
               <>
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Jeep ID</span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase"
-                    value={jeepId}
-                    onChange={(event) => setJeepId(event.target.value)}
-                    placeholder="JEEP-BD70"
-                    pattern="^JEEP-[A-Z0-9]{2,10}$"
-                    title="Use format JEEP-XXXX (letters/numbers only), e.g., JEEP-BD70"
-                    required={role === 'driver'}
-                  />
-                  <p className="mt-1 text-[11px] text-gray-500">
-                    Format: <span className="font-mono">JEEP-XXXX</span>. Example: <span className="font-mono">JEEP-BD70</span>
-                  </p>
-                </label>
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Route</span>
-                  <select
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                    value={jeepRoute}
-                    onChange={(event) => setJeepRoute(event.target.value)}
-                    required={role === 'driver'}
-                  >
-                    {AVAILABLE_ROUTES.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </label>
+                <input
+                  className="w-full rounded-xl bg-white/[0.07] border border-white/15 text-white placeholder-white/25 px-4 py-3 text-sm uppercase tracking-wider focus:outline-none focus:border-indigo-400/70 transition-colors"
+                  value={jeepId}
+                  onChange={(e) => setJeepId(e.target.value)}
+                  placeholder="Jeep ID — e.g. JEEP-BD70"
+                  pattern="^JEEP-[A-Z0-9]{2,10}$"
+                  title="Format: JEEP-XXXX"
+                  required
+                />
+                <select
+                  className="w-full rounded-xl bg-slate-800 border border-white/15 text-white/80 px-4 py-3 text-sm focus:outline-none focus:border-indigo-400/70 transition-colors"
+                  value={jeepRoute}
+                  onChange={(e) => setJeepRoute(e.target.value)}
+                  required
+                >
+                  {AVAILABLE_ROUTES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </>
             )}
 
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Username</span>
-              <input
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                placeholder="driver1"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Password</span>
-              <input
-                type="password"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
-            </label>
+            <input
+              className="w-full rounded-xl bg-white/[0.07] border border-white/15 text-white placeholder-white/25 px-4 py-3 text-sm focus:outline-none focus:border-indigo-400/70 transition-colors"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              required
+              autoComplete="username"
+            />
+            <input
+              type="password"
+              className="w-full rounded-xl bg-white/[0.07] border border-white/15 text-white placeholder-white/25 px-4 py-3 text-sm focus:outline-none focus:border-indigo-400/70 transition-colors"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
 
             {error && (
-              <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2 border border-red-100">{error}</p>
+              <div className="flex items-start gap-2 bg-red-500/15 border border-red-400/30 rounded-xl px-3 py-2.5">
+                <span className="text-red-400 text-xs leading-relaxed">{error}</span>
+              </div>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 hover:bg-blue-700 disabled:opacity-60 transition-colors"
+              className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-bold py-3 shadow-lg shadow-indigo-900/50 hover:from-indigo-400 hover:to-blue-400 disabled:opacity-50 transition-all active:scale-[0.98]"
             >
-              {isSubmitting ? 'Please wait...' : submitLabel}
+              {isSubmitting ? 'Please wait…' : submitLabel}
             </button>
           </form>
+        </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Demo users</p>
-            <div className="grid grid-cols-1 gap-2">
-              {DEMO_CREDENTIALS.map((creds) => (
-                <button
-                  key={creds.role}
-                  type="button"
-                  onClick={() => fillDemo(creds)}
-                  className="w-full text-left border border-gray-200 rounded-lg px-3 py-2 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                >
-                  <span className="text-sm font-semibold text-gray-900 capitalize">{creds.role}</span>
-                  <span className="block text-xs text-gray-500">{creds.username} / {creds.password}</span>
-                </button>
-              ))}
-            </div>
+        {/* Demo users */}
+        <div className="text-center space-y-2">
+          <p className="text-[11px] text-white/25 uppercase tracking-widest">Quick demo</p>
+          <div className="flex justify-center gap-2">
+            {DEMO_CREDENTIALS.map((creds) => (
+              <button
+                key={creds.role}
+                type="button"
+                onClick={() => fillDemo(creds)}
+                className="px-4 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/50 hover:text-white/80 text-xs font-medium transition-all capitalize"
+              >
+                {creds.role}
+              </button>
+            ))}
           </div>
         </div>
 
-        <p className="text-center text-xs text-gray-400">Simple backend auth is now enabled</p>
       </div>
     </div>
   );

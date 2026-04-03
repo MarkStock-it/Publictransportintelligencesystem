@@ -19,14 +19,7 @@ export default function CommuterPage() {
 
   return (
     <div className="relative">
-      <button
-        onClick={handleLogout}
-        className="absolute right-4 top-4 z-[1500] rounded-md bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-600 shadow hover:bg-white"
-      >
-        Sign out
-      </button>
-
-      <CommuterMapView jeepneys={jeeps} />
+      <CommuterMapView jeepneys={jeeps} onLogout={handleLogout} />
     </div>
   );
 }

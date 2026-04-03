@@ -12,16 +12,15 @@ export default function DriverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Minimal header — no system-wide data visible to driver */}
-      <header className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-100 shadow-sm">
-        <div>
-          <span className="text-sm font-bold text-gray-800">LarGo</span>
-          <span className="ml-2 text-xs text-gray-400">Driver</span>
+    <div className="min-h-screen bg-slate-950">
+      <header className="flex items-center justify-between px-5 py-3 bg-slate-900/80 backdrop-blur-md border-b border-white/[0.06] shadow-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-black text-white tracking-tight">LarGo</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-300/70 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full">Driver</span>
         </div>
         <button
           onClick={handleLogout}
-          className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+          className="text-[11px] font-semibold text-white/30 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
         >
           Sign out
         </button>

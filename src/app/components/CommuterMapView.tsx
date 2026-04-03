@@ -35,6 +35,7 @@ export interface CommuterJeepney {
 
 interface CommuterMapViewProps {
   jeepneys: CommuterJeepney[];
+  onLogout?: () => void;
 }
 
 interface AlarmDraft {
@@ -232,7 +233,7 @@ function areDriverLocationsEqual(a: RealDriverLocation[], b: RealDriverLocation[
   return true;
 }
 
-export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
+export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
   const [center, setCenter] = useState<[number, number]>(CEBU_FALLBACK);
   const [gpsGranted, setGpsGranted] = useState(false);
   const [locating, setLocating] = useState(true);
@@ -356,26 +357,34 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
       <Toaster position="top-center" richColors />
 
       {/* Top status bar */}
-      <div className="absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-sm shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md shadow-md">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">LarGo</span>
-          <span className="text-xs text-gray-400">Commuter View</span>
+          <span className="text-sm font-black text-white tracking-tight">LarGo</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-300/70 bg-indigo-500/20 px-2 py-0.5 rounded-full">Commuter</span>
         </div>
         <div className="flex items-center gap-2">
-          {locating && <span className="text-xs text-blue-500 animate-pulse">Locating...</span>}
+          {locating && <span className="text-xs text-indigo-300 animate-pulse">Locating…</span>}
           {!locating && gpsGranted && (
-            <span className="flex items-center gap-1 text-xs text-green-600">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500" />
+            <span className="flex items-center gap-1 text-xs text-emerald-400">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
               GPS
             </span>
           )}
-          {!locating && !gpsGranted && <span className="text-xs text-gray-400">Cebu City</span>}
-          <span className="text-xs font-medium text-gray-600">{jeepneys.length} jeepneys</span>
+          {!locating && !gpsGranted && <span className="text-[11px] text-white/30">Cebu City</span>}
+          <span className="text-[11px] font-medium text-white/50">{jeepneys.length} jeeps</span>
           {realDrivers.length > 0 && (
-            <span className="flex items-center gap-1 text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+            <span className="flex items-center gap-1 text-[11px] font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/25 px-2 py-0.5 rounded-full">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
               {realDrivers.length} live
             </span>
+          )}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="ml-1 text-[11px] font-semibold text-white/30 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+            >
+              Sign out
+            </button>
           )}
         </div>
       </div>
@@ -505,7 +514,7 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
               const map = (document.querySelector('.leaflet-container') as { _leaflet_map?: { zoomIn: () => void; zoomOut: () => void } } | null)?._leaflet_map;
               if (map) label === '+' ? map.zoomIn() : map.zoomOut();
             }}
-            className="w-10 h-10 bg-white rounded-xl shadow-md text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-transform"
+            className="w-10 h-10 bg-slate-900/80 backdrop-blur-sm border border-white/10 rounded-xl shadow-md text-white/70 font-bold text-lg flex items-center justify-center hover:bg-slate-800/90 active:scale-95 transition-all"
           >
             {label}
           </button>
@@ -513,35 +522,35 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
       </div>
 
       {/* Seat status legend */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg px-4 py-2">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-lg px-4 py-2">
         {(['many', 'full'] as const).map((status) => (
           <div key={status} className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
-            <span className="text-xs text-gray-600 capitalize">{SEAT_LABEL[status]}</span>
+            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
+            <span className="text-xs text-white/50">{SEAT_LABEL[status]}</span>
           </div>
         ))}
       </div>
 
       {/* Alarm panel/modal */}
       {alarmDraft && (
-        <div className="absolute inset-0 z-[1200] bg-black/30 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 space-y-4">
+        <div className="absolute inset-0 z-[1200] bg-black/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Set Jeepney Alarm</h2>
-              <p className="text-xs text-gray-500 mt-1">Get alerted when this jeepney gets close.</p>
+              <h2 className="text-base font-bold text-white">Set Jeepney Alarm</h2>
+              <p className="text-xs text-white/40 mt-1">Get alerted when this jeepney gets close.</p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-3 space-y-1">
-              <p className="text-sm font-mono font-bold text-gray-900">{alarmDraft.jeepId}</p>
-              <p className="text-xs text-gray-500">{alarmDraft.route}</p>
+            <div className="bg-white/[0.05] border border-white/10 rounded-xl p-3 space-y-1">
+              <p className="text-sm font-mono font-bold text-white">{alarmDraft.jeepId}</p>
+              <p className="text-xs text-white/40">{alarmDraft.route}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="alarm-distance" className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <label htmlFor="alarm-distance" className="text-xs font-semibold text-white/40 uppercase tracking-wider">
                   Distance
                 </label>
-                <span className="text-sm font-bold text-blue-700">{alarmDraft.thresholdKm}km</span>
+                <span className="text-sm font-bold text-indigo-300">{alarmDraft.thresholdKm}km</span>
               </div>
               <input
                 id="alarm-distance"
@@ -551,9 +560,9 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
                 step={1}
                 value={alarmDraft.thresholdKm}
                 onChange={(e) => setAlarmDraft((prev) => (prev ? { ...prev, thresholdKm: Number(e.target.value) } : prev))}
-                className="w-full"
+                className="w-full accent-indigo-400"
               />
-              <div className="flex justify-between text-[11px] text-gray-400 px-0.5">
+              <div className="flex justify-between text-[11px] text-white/25 px-0.5">
                 <span>1km</span>
                 <span>2km</span>
                 <span>3km</span>
@@ -563,13 +572,13 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
             <div className="flex gap-2 pt-1">
               <button
                 onClick={setAlarm}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-lg"
+                className="flex-1 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 text-white text-sm font-bold py-2.5 rounded-xl shadow-lg shadow-indigo-900/40 transition-all"
               >
                 Set Alarm
               </button>
               <button
                 onClick={() => setAlarmDraft(null)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold py-2.5 rounded-lg"
+                className="flex-1 bg-white/[0.07] hover:bg-white/10 border border-white/10 text-white/60 text-sm font-semibold py-2.5 rounded-xl transition-all"
               >
                 Cancel
               </button>
