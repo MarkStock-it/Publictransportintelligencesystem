@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import type { SeatStatus } from '../hooks/useJeepSimulation';
 import { useJeepAlarm } from '../hooks/useJeepAlarm';
+import { PinpointAlarm } from './PinpointAlarm';
 
 export interface CommuterJeepney {
   id: string;
@@ -324,6 +325,8 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
             </Popup>
           </Marker>
         ))}
+
+        <PinpointAlarm />
       </MapContainer>
 
       {/* Zoom controls */}

@@ -25,6 +25,7 @@ export default function CommuterPage() {
       >
         Sign out
       </button>
+
       <CommuterMapView jeepneys={jeeps} />
     </div>
   );

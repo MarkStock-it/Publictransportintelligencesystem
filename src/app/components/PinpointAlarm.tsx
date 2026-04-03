@@ -163,26 +163,26 @@ export function PinpointAlarm() {
 
       {/* ── Control panel ─────────────────────────────────────────────── */}
       <div
-        style={{ zIndex: 1000 }}
-        className="absolute bottom-6 right-4 w-72 select-none"
+        style={{ zIndex: 1200 }}
+        className="absolute right-4 top-16 w-[min(24rem,calc(100vw-1rem))] select-none"
       >
         {/* Toggle header */}
         <button
           onClick={() => setPanelOpen((o) => !o)}
-          className="w-full flex items-center justify-between bg-white rounded-t-xl px-4 py-2 shadow-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between bg-gradient-to-r from-indigo-600 to-blue-600 rounded-t-2xl px-4 py-2.5 shadow-xl border border-indigo-500 text-sm font-semibold text-white hover:brightness-105 transition"
         >
           <span className="flex items-center gap-2">
-            <MapPin size={15} className="text-indigo-500" />
+            <MapPin size={15} className="text-white" />
             Pinpoint Alarm
             {isArmed && !hasTriggered && (
-              <span className="ml-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="ml-1 h-2 w-2 rounded-full bg-red-300 animate-pulse" />
             )}
           </span>
-          <span className="text-xs text-gray-400">{panelOpen ? '▲' : '▼'}</span>
+          <span className="text-xs text-indigo-100">{panelOpen ? '▲' : '▼'}</span>
         </button>
 
         {panelOpen && (
-          <div className="bg-white rounded-b-xl shadow-lg border border-t-0 border-gray-200 p-4 flex flex-col gap-3">
+          <div className="bg-white/95 rounded-b-2xl shadow-xl border border-t-0 border-indigo-100 p-4 backdrop-blur-sm flex flex-col gap-3">
 
             {/* Status */}
             <p className={`text-xs font-medium ${statusLabel.color}`}>
