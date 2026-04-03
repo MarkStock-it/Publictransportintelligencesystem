@@ -7,6 +7,18 @@ import type { SeatStatus } from '../hooks/useJeepSimulation';
 import { useJeepAlarm } from '../hooks/useJeepAlarm';
 import { PinpointAlarm } from './PinpointAlarm';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
+interface RealDriverLocation {
+  driverId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  seatStatus: 'space' | 'full';
+  timestamp: number;
+}
+
 export interface CommuterJeepney {
   id: string;
   lat: number;
@@ -111,6 +123,45 @@ function makeAlarmRingIcon(): DivIcon {
   });
 }
 
+function makeRealDriverIcon(seatStatus: 'space' | 'full'): DivIcon {
+  const bg = seatStatus === 'full' ? '#dc2626' : '#16a34a';
+  return new DivIcon({
+    html: `
+      <div style="
+        background:${bg};
+        color:#fff;
+        font-size:10px;
+        font-weight:700;
+        font-family:monospace;
+        padding:3px 7px;
+        border-radius:6px;
+        border:2.5px solid #fff;
+        box-shadow:0 2px 8px rgba(0,0,0,0.4);
+        display:flex;
+        align-items:center;
+        gap:4px;
+        white-space:nowrap;
+        position:relative;
+      ">
+        <span style="
+          position:absolute;top:-5px;right:-5px;
+          background:#facc15;color:#78350f;
+          font-size:8px;font-weight:800;
+          padding:1px 3px;border-radius:4px;
+          line-height:1.2;
+        ">LIVE</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        JEEP
+      </div>`,
+    className: '',
+    iconSize: [64, 22],
+    iconAnchor: [32, 11],
+    popupAnchor: [0, -16],
+  });
+}
+
 function FlyToLocation({ center }: { center: [number, number] }) {
   const map = useMap();
   const prev = useRef<[number, number] | null>(null);
@@ -155,6 +206,28 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
 
   const [alarmDraft, setAlarmDraft] = useState<AlarmDraft | null>(null);
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarm | null>(null);
+
+  // ── Real driver locations polled from the server every 3 s ───────────────
+  const [realDrivers, setRealDrivers] = useState<RealDriverLocation[]>([]);
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const token = localStorage.getItem('ptis_token');
+        const res = await fetch(`${API_BASE}/api/driver/locations`, {
+          headers: { Authorization: `Bearer ${token ?? ''}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRealDrivers(data.locations ?? []);
+        }
+      } catch {
+        // ignore network blips
+      }
+    };
+    poll();
+    const id = setInterval(poll, 3_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Track user location continuously for live distance updates.
   useEffect(() => {
@@ -245,6 +318,12 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
           )}
           {!locating && !gpsGranted && <span className="text-xs text-gray-400">Cebu City</span>}
           <span className="text-xs font-medium text-gray-600">{jeepneys.length} jeepneys</span>
+          {realDrivers.length > 0 && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+              {realDrivers.length} live
+            </span>
+          )}
         </div>
       </div>
 
@@ -302,7 +381,31 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
           </Marker>
         )}
 
-        {/* Jeep markers */}
+        {/* Real driver markers (from server) */}
+        {realDrivers.map((driver) => (
+          <Marker
+            key={driver.driverId}
+            position={[driver.lat, driver.lng]}
+            icon={makeRealDriverIcon(driver.seatStatus)}
+          >
+            <Popup>
+              <div className="min-w-[150px] space-y-1.5 py-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">LIVE</span>
+                  <span className="font-semibold text-sm text-gray-900">{driver.name}</span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {driver.seatStatus === 'full' ? '🔴 Full' : '🟢 Space available'}
+                </p>
+                {driver.accuracy && (
+                  <p className="text-[11px] text-gray-400">GPS ±{Math.round(driver.accuracy)} m</p>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Simulated jeep markers */}
         {jeepneys.map((jeep) => (
           <Marker
             key={jeep.id}

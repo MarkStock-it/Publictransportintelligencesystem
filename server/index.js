@@ -110,6 +110,46 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "ptis-backend", now: new Date().toISOString() });
 });
 
+// ─── Real-time driver location store (in-memory) ───────────────────────────
+// driverId → { driverId, name, lat, lng, accuracy, seatStatus, timestamp }
+const driverLocations = new Map();
+const DRIVER_LOCATION_TTL_MS = 15_000; // drop driver if not updated in 15 s
+
+/** POST /api/driver/location — driver phone pushes its current GPS coordinates */
+app.post("/api/driver/location", authRequired, requireRole("driver"), (req, res) => {
+  const { lat, lng, accuracy, seatStatus } = req.body ?? {};
+
+  if (typeof lat !== "number" || typeof lng !== "number") {
+    return res.status(400).json({ message: "lat and lng are required numbers" });
+  }
+
+  driverLocations.set(req.user.id, {
+    driverId: req.user.id,
+    name: req.user.name,
+    lat,
+    lng,
+    accuracy: typeof accuracy === "number" ? accuracy : null,
+    seatStatus: seatStatus === "full" ? "full" : "space",
+    timestamp: Date.now(),
+  });
+
+  return res.json({ ok: true });
+});
+
+/** GET /api/driver/locations — commuter polls all active driver positions */
+app.get("/api/driver/locations", authRequired, (_req, res) => {
+  const now = Date.now();
+  const active = [];
+  for (const [id, loc] of driverLocations) {
+    if (now - loc.timestamp < DRIVER_LOCATION_TTL_MS) {
+      active.push(loc);
+    } else {
+      driverLocations.delete(id);
+    }
+  }
+  return res.json({ locations: active });
+});
+
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body ?? {};
   if (!username || !password) {

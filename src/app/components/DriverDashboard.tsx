@@ -1,7 +1,8 @@
 import { useDriverLocation } from '../context/DriverLocationContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const DRIVER_SPACE_STATUS_KEY = 'ptis_driver_space_status';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 function fmt(n: number, decimals = 6): string {
   return n.toFixed(decimals);
@@ -17,6 +18,41 @@ export function DriverDashboard() {
   useEffect(() => {
     localStorage.setItem(DRIVER_SPACE_STATUS_KEY, driverSeatStatus);
   }, [driverSeatStatus]);
+
+  // ── Push real GPS to the server so commuters can see this jeep ──────────
+  const postingRef = useRef(false);
+  useEffect(() => {
+    if (!isSharing || !location) return;
+
+    const post = async () => {
+      if (postingRef.current) return;
+      postingRef.current = true;
+      try {
+        const token = localStorage.getItem('ptis_token');
+        await fetch(`${API_BASE}/api/driver/location`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+          body: JSON.stringify({
+            lat: location.lat,
+            lng: location.lng,
+            accuracy: location.accuracy,
+            seatStatus: driverSeatStatus,
+          }),
+        });
+      } catch {
+        // network hiccup — silent, will retry next tick
+      } finally {
+        postingRef.current = false;
+      }
+    };
+
+    post(); // send immediately on location change
+    const id = setInterval(post, 3_000);
+    return () => clearInterval(id);
+  }, [isSharing, location, driverSeatStatus]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6 select-none">
