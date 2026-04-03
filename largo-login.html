@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LarGo | Public Transport Intelligence</title>
+    <style>
+      /* ========================================
+         Theme Variables
+      ======================================== */
+      :root {
+        --bg-deep: #1e3a8a;
+        --bg-electric: #2563eb;
+        --surface: rgba(255, 255, 255, 0.68);
+        --surface-strong: rgba(255, 255, 255, 0.88);
+        --text-main: #0f172a;
+        --text-sub: #334155;
+        --line-soft: rgba(30, 58, 138, 0.2);
+        --glow: rgba(37, 99, 235, 0.48);
+        --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.28);
+        --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.16);
+        --radius: 20px;
+        --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+        --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      /* ========================================
+         Base + Background Atmosphere
+      ======================================== */
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-main);
+        background: linear-gradient(135deg, #0b1d55 0%, #153a96 35%, #2563eb 70%, #4b8cff 100%);
+        background-size: 240% 240%;
+        animation: driftGradient 20s ease-in-out infinite;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      body::before {
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(circle at 50% 45%, black 22%, transparent 80%);
+        opacity: 0.55;
+        animation: mapGridShift 30s linear infinite;
+      }
+
+      body::after {
+        background:
+          radial-gradient(circle at 15% 25%, rgba(96, 165, 250, 0.33), transparent 42%),
+          radial-gradient(circle at 80% 75%, rgba(191, 219, 254, 0.25), transparent 40%);
+        filter: blur(8px);
+      }
+
+      .float {
+        position: fixed;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(96, 165, 250, 0.16));
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 24px rgba(191, 219, 254, 0.42);
+        opacity: 0.52;
+        pointer-events: none;
+      }
+
+      .float.one {
+        width: 90px;
+        height: 90px;
+        top: 14%;
+        left: 10%;
+        animation: bob 11s ease-in-out infinite;
+      }
+
+      .float.two {
+        width: 52px;
+        height: 52px;
+        top: 68%;
+        left: 85%;
+        animation: bob 9s ease-in-out infinite reverse;
+      }
+
+      .float.three {
+        width: 64px;
+        height: 64px;
+        top: 78%;
+        left: 14%;
+        animation: bob 12s ease-in-out infinite;
+      }
+
+      /* ========================================
+         Login Shell + Card
+      ======================================== */
+      .shell {
+        width: min(100%, 980px);
+        display: grid;
+        place-items: center;
+      }
+
+      .login-card {
+        width: min(100%, 430px);
+        border-radius: var(--radius);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: linear-gradient(165deg, var(--surface) 0%, rgba(255, 255, 255, 0.46) 100%);
+        backdrop-filter: blur(18px) saturate(140%);
+        -webkit-backdrop-filter: blur(18px) saturate(140%);
+        box-shadow: var(--shadow-lg);
+        padding: 22px 20px 18px;
+        animation: cardIn 900ms var(--ease-soft) both;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .logo-wrap {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        box-shadow: 0 10px 20px rgba(30, 58, 138, 0.32), 0 0 24px rgba(96, 165, 250, 0.35);
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.22rem;
+        letter-spacing: 0.2px;
+      }
+
+      .brand p {
+        margin: 2px 0 0;
+        color: var(--text-sub);
+        font-size: 0.86rem;
+      }
+
+      /* ========================================
+         Tab Switcher
+      ======================================== */
+      .tabs {
+        background: rgba(255, 255, 255, 0.54);
+        border: 1px solid rgba(30, 58, 138, 0.15);
+        border-radius: 14px;
+        padding: 4px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin-bottom: 18px;
+        position: relative;
+      }
+
+      .tab-btn {
+        border: none;
+        background: transparent;
+        color: #1e293b;
+        border-radius: 11px;
+        padding: 10px 12px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: color 0.35s var(--ease-spring), transform 0.3s var(--ease-spring);
+        position: relative;
+        z-index: 2;
+      }
+
+      .tab-btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .tab-indicator {
+        position: absolute;
+        z-index: 1;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        height: calc(100% - 8px);
+        border-radius: 11px;
+        background: linear-gradient(130deg, #ffffff 0%, #e5eeff 100%);
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+        transition: transform 420ms var(--ease-soft);
+      }
+
+      .tabs[data-mode="register"] .tab-indicator {
+        transform: translateX(calc(100% + 4px));
+      }
+
+      .tabs[data-mode="login"] .tab-btn[data-tab="login"],
+      .tabs[data-mode="register"] .tab-btn[data-tab="register"] {
+        color: #0f172a;
+      }
+
+      /* ========================================
+         Form Controls
+      ======================================== */
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: #1f355f;
+        font-weight: 650;
+      }
+
+      .field {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line-soft);
+        background: var(--surface-strong);
+        color: #0f172a;
+        padding: 12px 13px;
+        outline: none;
+        transition: border-color 0.25s var(--ease-spring), box-shadow 0.35s var(--ease-spring), transform 0.25s var(--ease-spring);
+      }
+
+      .field::placeholder {
+        color: #64748b;
+      }
+
+      .field:focus {
+        border-color: rgba(37, 99, 235, 0.75);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 0 18px rgba(37, 99, 235, 0.28);
+        transform: translateY(-1px);
+      }
+
+      .cta {
+        margin-top: 2px;
+        border: none;
+        border-radius: 13px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #3b82f6 100%);
+        color: #f8fbff;
+        font-weight: 800;
+        font-size: 0.95rem;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.32s var(--ease-spring), box-shadow 0.35s var(--ease-spring), filter 0.3s ease;
+      }
+
+      .cta:hover {
+        transform: scale(1.02) translateY(-1px);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.38), 0 0 22px rgba(59, 130, 246, 0.48);
+        filter: brightness(1.04);
+      }
+
+      .cta:active {
+        transform: scale(0.99);
+      }
+
+      .cta.loading {
+        color: rgba(255, 255, 255, 0.85);
+        pointer-events: none;
+      }
+
+      .cta.loading::after {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.26);
+        border-top-color: #ffffff;
+        right: 14px;
+        top: calc(50% - 9px);
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* ========================================
+         Demo Users + Footer
+      ======================================== */
+      .demo-wrap {
+        margin-top: 16px;
+      }
+
+      .demo-title {
+        margin: 0 0 9px;
+        font-size: 0.8rem;
+        color: #2b4671;
+        text-transform: uppercase;
+        letter-spacing: 0.11em;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .demo-card {
+        border: 1px solid rgba(30, 58, 138, 0.15);
+        border-radius: 12px;
+        padding: 10px 11px;
+        background: rgba(255, 255, 255, 0.72);
+        transition: transform 0.3s var(--ease-spring), box-shadow 0.35s var(--ease-spring);
+      }
+
+      .demo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .demo-card h3 {
+        margin: 0;
+        font-size: 0.84rem;
+      }
+
+      .demo-card p {
+        margin: 3px 0 0;
+        color: #334155;
+        font-size: 0.76rem;
+      }
+
+      footer {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 0.74rem;
+        color: #36507b;
+      }
+
+      /* ========================================
+         Responsive Layout
+      ======================================== */
+      @media (min-width: 480px) {
+        .login-card {
+          padding: 26px 24px 20px;
+        }
+
+        .brand h1 {
+          font-size: 1.3rem;
+        }
+
+        .demo-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      @media (min-width: 820px) {
+        .login-card {
+          width: 470px;
+        }
+
+        .float.one {
+          left: 16%;
+        }
+      }
+
+      /* ========================================
+         Keyframes
+      ======================================== */
+      @keyframes cardIn {
+        from {
+          opacity: 0;
+          transform: translateY(24px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes driftGradient {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      @keyframes mapGridShift {
+        from {
+          transform: translateY(0);
+        }
+        to {
+          transform: translateY(48px);
+        }
+      }
+
+      @keyframes bob {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0);
+        }
+        50% {
+          transform: translate3d(0, -14px, 0);
+        }
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="float one" aria-hidden="true"></div>
+    <div class="float two" aria-hidden="true"></div>
+    <div class="float three" aria-hidden="true"></div>
+
+    <main class="shell">
+      <section class="login-card" aria-label="LarGo authentication panel">
+        <!-- Brand Header -->
+        <div class="brand">
+          <div class="logo-wrap" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 7.8C4 6.81 4.81 6 5.8 6H18.2C19.19 6 20 6.81 20 7.8V14.2C20 15.19 19.19 16 18.2 16H5.8C4.81 16 4 15.19 4 14.2V7.8Z" fill="white" fill-opacity="0.95"/>
+              <path d="M6 9.3C6 8.75 6.45 8.3 7 8.3H17C17.55 8.3 18 8.75 18 9.3V11.6H6V9.3Z" fill="#1D4ED8"/>
+              <circle cx="8" cy="17.7" r="1.3" fill="white"/>
+              <circle cx="16" cy="17.7" r="1.3" fill="white"/>
+              <path d="M8 14H16" stroke="#1D4ED8" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1>LarGo</h1>
+            <p>Public Transport Intelligence Platform</p>
+          </div>
+        </div>
+
+        <!-- Login/Register Tabs -->
+        <div class="tabs" data-mode="login" id="tabs">
+          <span class="tab-indicator" aria-hidden="true"></span>
+          <button class="tab-btn" data-tab="login" type="button">Login</button>
+          <button class="tab-btn" data-tab="register" type="button">Register</button>
+        </div>
+
+        <!-- Auth Form -->
+        <form class="stack" id="authForm">
+          <label>
+            Role
+            <select class="field" name="role" required>
+              <option value="commuter">Commuter</option>
+              <option value="driver">Driver</option>
+              <option value="lgu">LGU</option>
+            </select>
+          </label>
+
+          <label>
+            Username
+            <input class="field" type="text" name="username" placeholder="juan.delacruz" autocomplete="username" required />
+          </label>
+
+          <label>
+            Password
+            <input class="field" type="password" name="password" placeholder="Enter your secure password" autocomplete="current-password" required />
+          </label>
+
+          <button class="cta" type="submit" id="submitBtn">Sign In</button>
+        </form>
+
+        <!-- Demo Users -->
+        <div class="demo-wrap">
+          <p class="demo-title">Demo Users</p>
+          <div class="demo-grid">
+            <article class="demo-card">
+              <h3>Commuter</h3>
+              <p>commuter.demo / demo1234</p>
+            </article>
+            <article class="demo-card">
+              <h3>Driver</h3>
+              <p>driver.demo / demo1234</p>
+            </article>
+            <article class="demo-card">
+              <h3>LGU Admin</h3>
+              <p>lgu.demo / demo1234</p>
+            </article>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+          Intelligent route visibility for safer, faster Philippine commutes.
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      const tabs = document.getElementById("tabs");
+      const submitBtn = document.getElementById("submitBtn");
+      const authForm = document.getElementById("authForm");
+
+      tabs.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLButtonElement)) return;
+
+        const nextMode = target.getAttribute("data-tab");
+        if (!nextMode) return;
+
+        tabs.setAttribute("data-mode", nextMode);
+        submitBtn.textContent = nextMode === "register" ? "Create Account" : "Sign In";
+      });
+
+      authForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (submitBtn.classList.contains("loading")) return;
+
+        const originalText = submitBtn.textContent;
+        submitBtn.classList.add("loading");
+        submitBtn.textContent = "Securing session";
+
+        setTimeout(() => {
+          submitBtn.classList.remove("loading");
+          submitBtn.textContent = originalText;
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>

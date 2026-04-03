@@ -13,7 +13,8 @@
     "deploy:pages": "npm run build && rm -rf docs && cp -r dist docs && touch docs/.nojekyll"
   },
   "dependencies": {
-      "bcryptjs": "^2.4.3",
+      "@supabase/supabase-js": "^2.49.4",
+    "bcryptjs": "^2.4.3",
       "cors": "^2.8.5",
       "express": "^4.21.2",
       "jsonwebtoken": "^9.0.2",
