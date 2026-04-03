@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
-import { DivIcon } from 'leaflet';
+import { DivIcon, type LatLngBoundsExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEnhancedJeepSimulation } from '../hooks/useEnhancedJeepSimulation';
 import { Navigation } from './Navigation';
@@ -29,6 +29,11 @@ const stopIcon = new DivIcon({
   iconSize: [16, 16],
   iconAnchor: [8, 8],
 });
+
+const PHILIPPINES_BOUNDS: LatLngBoundsExpression = [
+  [4.5, 116.8],
+  [21.3, 127.4],
+];
 
 export function EnhancedLiveMapView() {
   const {
@@ -75,6 +80,11 @@ export function EnhancedLiveMapView() {
               <MapContainer
                 center={[10.3157, 123.8854] as any}
                 zoom={13}
+                minZoom={6}
+                maxZoom={18}
+                maxBounds={PHILIPPINES_BOUNDS}
+                maxBoundsViscosity={1.0}
+                preferCanvas
                 className="h-full w-full"
                 zoomControl={false}
               >
@@ -84,6 +94,8 @@ export function EnhancedLiveMapView() {
                     : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   }
                   attribution='&copy; OpenStreetMap'
+                  noWrap
+                  bounds={PHILIPPINES_BOUNDS}
                 />
 
                 {/* Route paths */}

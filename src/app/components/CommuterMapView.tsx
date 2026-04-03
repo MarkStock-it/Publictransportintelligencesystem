@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { DivIcon } from 'leaflet';
+import { DivIcon, type LatLngBoundsExpression } from 'leaflet';
 import { Toaster } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import type { SeatStatus } from '../hooks/useJeepSimulation';
@@ -8,6 +8,10 @@ import { useJeepAlarm } from '../hooks/useJeepAlarm';
 import { PinpointAlarm } from './PinpointAlarm';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+const PHILIPPINES_BOUNDS: LatLngBoundsExpression = [
+  [4.5, 116.8],
+  [21.3, 127.4],
+];
 
 interface RealDriverLocation {
   driverId: string;
@@ -207,6 +211,27 @@ function formatDistance(distanceKm: number | null): string {
   return `${distanceKm.toFixed(1)}km away`;
 }
 
+function areDriverLocationsEqual(a: RealDriverLocation[], b: RealDriverLocation[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (
+      left.driverId !== right.driverId
+      || left.lat !== right.lat
+      || left.lng !== right.lng
+      || left.accuracy !== right.accuracy
+      || left.seatStatus !== right.seatStatus
+      || left.timestamp !== right.timestamp
+      || left.jeepId !== right.jeepId
+      || left.route !== right.route
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
   const [center, setCenter] = useState<[number, number]>(CEBU_FALLBACK);
   const [gpsGranted, setGpsGranted] = useState(false);
@@ -227,7 +252,10 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          setRealDrivers(data.locations ?? []);
+          const next = [...(data.locations ?? [])].sort((l: RealDriverLocation, r: RealDriverLocation) =>
+            l.driverId.localeCompare(r.driverId),
+          );
+          setRealDrivers((prev) => (areDriverLocationsEqual(prev, next) ? prev : next));
         }
       } catch {
         // ignore network blips
@@ -307,6 +335,22 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
 
   const ringPos = alarmTrackedJeep ? ([alarmTrackedJeep.lat, alarmTrackedJeep.lng] as [number, number]) : null;
 
+  const simulatedMarkers = useMemo(
+    () => jeepneys.map((jeep) => ({
+      ...jeep,
+      icon: makeMarkerIcon(jeep.id, jeep.seatStatus),
+    })),
+    [jeepneys],
+  );
+
+  const liveMarkers = useMemo(
+    () => realDrivers.map((driver) => ({
+      ...driver,
+      icon: makeRealDriverIcon(driver.seatStatus, driver.jeepId, driver.route),
+    })),
+    [realDrivers],
+  );
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-gray-100">
       <Toaster position="top-center" richColors />
@@ -361,6 +405,11 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
       <MapContainer
         center={center}
         zoom={15}
+        minZoom={6}
+        maxZoom={18}
+        maxBounds={PHILIPPINES_BOUNDS}
+        maxBoundsViscosity={1.0}
+        preferCanvas
         className="h-full w-full"
         zoomControl={false}
         attributionControl={false}
@@ -368,7 +417,9 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          maxZoom={19}
+          maxZoom={18}
+          noWrap
+          bounds={PHILIPPINES_BOUNDS}
         />
 
         <FlyToLocation center={center} />
@@ -391,11 +442,11 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
         )}
 
         {/* Real driver markers (from server) */}
-        {realDrivers.map((driver) => (
+        {liveMarkers.map((driver) => (
           <Marker
             key={driver.driverId}
             position={[driver.lat, driver.lng]}
-            icon={makeRealDriverIcon(driver.seatStatus, driver.jeepId, driver.route)}
+            icon={driver.icon}
           >
             <Popup>
               <div className="min-w-[150px] space-y-1.5 py-0.5">
@@ -418,11 +469,11 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
         ))}
 
         {/* Simulated jeep markers */}
-        {jeepneys.map((jeep) => (
+        {simulatedMarkers.map((jeep) => (
           <Marker
             key={jeep.id}
             position={[jeep.lat, jeep.lng]}
-            icon={makeMarkerIcon(jeep.id, jeep.seatStatus)}
+            icon={jeep.icon}
             eventHandlers={{
               click: () => openAlarmModal(jeep),
             }}
