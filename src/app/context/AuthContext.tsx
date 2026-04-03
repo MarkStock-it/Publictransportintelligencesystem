@@ -7,6 +7,8 @@ interface AuthUser {
   username: string;
   name: string;
   role: Role;
+  jeepId?: string | null;
+  route?: string | null;
 }
 
 interface LoginResult {
@@ -25,6 +27,8 @@ interface AuthState {
     password: string;
     name: string;
     role: Role;
+    jeepId?: string;
+    route?: string;
   }) => Promise<LoginResult>;
   refreshMe: () => Promise<void>;
   logout: () => void;
@@ -89,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     name: string;
     role: Role;
+    jeepId?: string;
+    route?: string;
   }): Promise<LoginResult> => {
     try {
       const response = await fetch(apiUrl('/api/auth/register'), {

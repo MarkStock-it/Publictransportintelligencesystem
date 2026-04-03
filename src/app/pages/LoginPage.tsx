@@ -14,6 +14,15 @@ const DEMO_CREDENTIALS = [
   { role: 'lgu', username: 'lgu1', password: 'lgu123' },
 ] as const;
 
+const AVAILABLE_ROUTES = [
+  '04L - Lahug - Carbon',
+  '06B - Bulacao - Ayala',
+  '13C - Mabolo - Pier',
+  '13T - Talamban - Banilad',
+] as const;
+
+const JEEP_ID_REGEX = /^JEEP-[A-Z0-9]{2,10}$/;
+
 export default function LoginPage() {
   const { login, register, role: authRole } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +31,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<Role>('commuter');
+  const [jeepId, setJeepId] = useState('');
+  const [jeepRoute, setJeepRoute] = useState<string>(AVAILABLE_ROUTES[0]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,11 +47,20 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    if (mode === 'register' && role === 'driver') {
+      const normalizedJeepId = jeepId.trim().toUpperCase();
+      if (!JEEP_ID_REGEX.test(normalizedJeepId)) {
+        setError('Invalid Jeep ID format. Use JEEP- followed by 2-10 letters/numbers (e.g., JEEP-BD70).');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     const result = mode === 'login'
       ? await login(username, password)
-      : await register({ username, password, name, role });
+      : await register({ username, password, name, role, jeepId: role === 'driver' ? jeepId.trim().toUpperCase() : undefined, route: role === 'driver' ? jeepRoute : undefined });
 
     setIsSubmitting(false);
 
@@ -129,6 +149,39 @@ export default function LoginPage() {
                   required
                 />
               </label>
+            )}
+
+            {mode === 'register' && role === 'driver' && (
+              <>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Jeep ID</span>
+                  <input
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase"
+                    value={jeepId}
+                    onChange={(event) => setJeepId(event.target.value)}
+                    placeholder="JEEP-BD70"
+                    pattern="^JEEP-[A-Z0-9]{2,10}$"
+                    title="Use format JEEP-XXXX (letters/numbers only), e.g., JEEP-BD70"
+                    required={role === 'driver'}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Format: <span className="font-mono">JEEP-XXXX</span>. Example: <span className="font-mono">JEEP-BD70</span>
+                  </p>
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Route</span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                    value={jeepRoute}
+                    onChange={(event) => setJeepRoute(event.target.value)}
+                    required={role === 'driver'}
+                  >
+                    {AVAILABLE_ROUTES.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
 
             <label className="block">

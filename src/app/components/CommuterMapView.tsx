@@ -17,6 +17,8 @@ interface RealDriverLocation {
   accuracy: number | null;
   seatStatus: 'space' | 'full';
   timestamp: number;
+  jeepId?: string;
+  route?: string;
 }
 
 export interface CommuterJeepney {
@@ -123,8 +125,10 @@ function makeAlarmRingIcon(): DivIcon {
   });
 }
 
-function makeRealDriverIcon(seatStatus: 'space' | 'full'): DivIcon {
+function makeRealDriverIcon(seatStatus: 'space' | 'full', jeepId?: string, route?: string): DivIcon {
   const bg = seatStatus === 'full' ? '#dc2626' : '#16a34a';
+  const label = jeepId ? (jeepId.split('-')[1] ?? jeepId) : '???';
+  const routeChip = route ? (route.split(' - ')[0] ?? route) : null;
   return new DivIcon({
     html: `
       <div style="
@@ -133,6 +137,7 @@ function makeRealDriverIcon(seatStatus: 'space' | 'full'): DivIcon {
         font-size:10px;
         font-weight:700;
         font-family:monospace;
+        min-width:64px;
         padding:3px 7px;
         border-radius:6px;
         border:2.5px solid #fff;
@@ -151,13 +156,17 @@ function makeRealDriverIcon(seatStatus: 'space' | 'full'): DivIcon {
           line-height:1.2;
         ">LIVE</span>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="white">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" stroke="white" stroke-width="2" fill="none"/>
+          <circle cx="8" cy="18" r="1.5" fill="white"/>
+          <circle cx="16" cy="18" r="1.5" fill="white"/>
         </svg>
-        JEEP
+        ${label}
+        ${routeChip ? `<span style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); padding:1px 4px; border-radius:999px; font-size:8px; font-weight:800; letter-spacing:0.02em;">${routeChip}</span>` : ''}
       </div>`,
     className: '',
-    iconSize: [64, 22],
-    iconAnchor: [32, 11],
+    iconSize: [88, 22],
+    iconAnchor: [44, 11],
     popupAnchor: [0, -16],
   });
 }
@@ -386,14 +395,17 @@ export function CommuterMapView({ jeepneys }: CommuterMapViewProps) {
           <Marker
             key={driver.driverId}
             position={[driver.lat, driver.lng]}
-            icon={makeRealDriverIcon(driver.seatStatus)}
+            icon={makeRealDriverIcon(driver.seatStatus, driver.jeepId, driver.route)}
           >
             <Popup>
               <div className="min-w-[150px] space-y-1.5 py-0.5">
                 <div className="flex items-center gap-2">
                   <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">LIVE</span>
-                  <span className="font-semibold text-sm text-gray-900">{driver.name}</span>
+                  <span className="font-semibold text-sm text-gray-900">{driver.jeepId ?? driver.name}</span>
                 </div>
+                {driver.route && (
+                  <p className="text-xs font-medium text-blue-700">{driver.route}</p>
+                )}
                 <p className="text-xs text-gray-500">
                   {driver.seatStatus === 'full' ? '🔴 Full' : '🟢 Space available'}
                 </p>

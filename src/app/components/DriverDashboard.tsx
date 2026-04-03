@@ -1,5 +1,6 @@
 import { useDriverLocation } from '../context/DriverLocationContext';
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const DRIVER_SPACE_STATUS_KEY = 'ptis_driver_space_status';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -10,6 +11,7 @@ function fmt(n: number, decimals = 6): string {
 
 export function DriverDashboard() {
   const { isSharing, location, error, startSharing, stopSharing } = useDriverLocation();
+  const { user } = useAuth();
   const [driverSeatStatus, setDriverSeatStatus] = useState<'space' | 'full'>(() => {
     const stored = localStorage.getItem(DRIVER_SPACE_STATUS_KEY);
     return stored === 'full' ? 'full' : 'space';
@@ -40,6 +42,8 @@ export function DriverDashboard() {
             lng: location.lng,
             accuracy: location.accuracy,
             seatStatus: driverSeatStatus,
+            jeepId: user?.jeepId ?? undefined,
+            route: user?.route ?? undefined,
           }),
         });
       } catch {
@@ -52,7 +56,7 @@ export function DriverDashboard() {
     post(); // send immediately on location change
     const id = setInterval(post, 3_000);
     return () => clearInterval(id);
-  }, [isSharing, location, driverSeatStatus]);
+  }, [isSharing, location, driverSeatStatus, user?.jeepId, user?.route]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-8 px-6 select-none">
@@ -90,6 +94,18 @@ export function DriverDashboard() {
       >
         {isSharing ? 'Stop\nSharing' : 'Start\nSharing'}
       </button>
+
+      <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Driver Profile</p>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-500">Jeep ID</span>
+          <span className="font-mono font-semibold text-gray-900">{user?.jeepId ?? 'Not set'}</span>
+        </div>
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <span className="text-gray-500">Route</span>
+          <span className="font-medium text-right text-gray-800">{user?.route ?? 'Not set'}</span>
+        </div>
+      </div>
 
       <div className="w-full max-w-xs bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Passenger Space Status</p>

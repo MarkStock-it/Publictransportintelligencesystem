@@ -45,6 +45,8 @@ const seedUsers = [
     username: "driver1",
     name: "Demo Driver",
     role: "driver",
+    jeepId: "JEEP-D001",
+    route: "04L - Lahug - Carbon",
     passwordHash: bcrypt.hashSync("driver123", 10),
   },
   {
@@ -63,6 +65,8 @@ const safeUser = (user) => ({
   username: user.username,
   name: user.name,
   role: user.role,
+  jeepId: user.jeepId ?? null,
+  route: user.route ?? null,
 });
 
 function createToken(user) {
@@ -126,6 +130,8 @@ app.post("/api/driver/location", authRequired, requireRole("driver"), (req, res)
   driverLocations.set(req.user.id, {
     driverId: req.user.id,
     name: req.user.name,
+    jeepId: req.user.jeepId ?? req.user.id,
+    route: req.user.route ?? "Unknown Route",
     lat,
     lng,
     accuracy: typeof accuracy === "number" ? accuracy : null,
@@ -171,7 +177,7 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 app.post("/api/auth/register", async (req, res) => {
-  const { username, password, name, role } = req.body ?? {};
+  const { username, password, name, role, jeepId, route } = req.body ?? {};
 
   if (!username || !password || !name || !role) {
     return res.status(400).json({ message: "username, password, name, and role are required" });
@@ -179,6 +185,10 @@ app.post("/api/auth/register", async (req, res) => {
 
   if (!allowedRoles.includes(role)) {
     return res.status(400).json({ message: "Invalid role" });
+  }
+
+  if (role === "driver" && (!jeepId || !route)) {
+    return res.status(400).json({ message: "jeepId and route are required for driver accounts" });
   }
 
   if (String(password).length < 6) {
@@ -189,12 +199,18 @@ app.post("/api/auth/register", async (req, res) => {
     return res.status(409).json({ message: "Username already exists" });
   }
 
+  if (role === "driver" && users.some((u) => u.role === "driver" && u.jeepId === String(jeepId))) {
+    return res.status(409).json({ message: "Jeep ID is already registered" });
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const newUser = {
     id: `u-${role}-${users.length + 1}`,
     username: String(username),
     name: String(name),
     role,
+    jeepId: role === "driver" ? String(jeepId).toUpperCase() : null,
+    route: role === "driver" ? String(route) : null,
     passwordHash,
   };
 
