@@ -6,6 +6,14 @@ import 'leaflet/dist/leaflet.css';
 import type { SeatStatus } from '../hooks/useJeepSimulation';
 import { useJeepAlarm } from '../hooks/useJeepAlarm';
 import { PinpointAlarm } from './PinpointAlarm';
+import {
+  JEEPNEY_ROUTES,
+  findBestRoute,
+  type Coordinates as PlannerCoordinates,
+  type Route,
+  type RouteMatch,
+} from '../data/jeepneyRoutes';
+import { drawRouteSegment } from '../services/routeDrawing';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 const PHILIPPINES_BOUNDS: LatLngBoundsExpression = [
@@ -50,6 +58,16 @@ interface ActiveAlarm {
 }
 
 const CEBU_FALLBACK: [number, number] = [10.3157, 123.8854];
+const TRIP_PLANNER_ROUTE = JEEPNEY_ROUTES[0];
+const TRIP_PLANNER_STOPS = [...TRIP_PLANNER_ROUTE.stops].sort((a, b) => a.order - b.order);
+const TRIP_PLANNER_ROUTES: Route[] = JEEPNEY_ROUTES.map((route) => ({
+  ...route,
+  path: route.path.map((point) => [...point] as PlannerCoordinates),
+  stops: route.stops.map((stop) => ({
+    ...stop,
+    coords: [...stop.coords] as PlannerCoordinates,
+  })),
+}));
 
 const SEAT_COLOR: Record<SeatStatus, string> = {
   many: '#16a34a',
@@ -233,6 +251,56 @@ function areDriverLocationsEqual(a: RealDriverLocation[], b: RealDriverLocation[
   return true;
 }
 
+function pointsEqual(a: PlannerCoordinates, b: PlannerCoordinates): boolean {
+  return a[0] === b[0] && a[1] === b[1];
+}
+
+function RoutePlannerLayer({ match }: { match: RouteMatch | null }) {
+  const map = useMap();
+  const routeLayerRef = useRef<ReturnType<typeof drawRouteSegment> | null>(null);
+
+  useEffect(() => {
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+
+    map.eachLayer((layer) => {
+      const paneName = (layer as { options?: { pane?: string } }).options?.pane;
+      if (paneName === 'route') {
+        map.removeLayer(layer);
+      }
+    });
+
+    if (!match) {
+      return;
+    }
+
+    const route = TRIP_PLANNER_ROUTES.find((item) => item.id === match.routeId);
+    if (!route) {
+      return;
+    }
+
+    const startIndex = route.path.findIndex((point) => pointsEqual(point, match.boardingPoint));
+    const endIndex = route.path.findIndex((point) => pointsEqual(point, match.alightingPoint));
+
+    if (startIndex === -1 || endIndex === -1) {
+      return;
+    }
+
+    routeLayerRef.current = drawRouteSegment(map, route.path, startIndex, endIndex);
+
+    return () => {
+      if (routeLayerRef.current) {
+        routeLayerRef.current.remove();
+        routeLayerRef.current = null;
+      }
+    };
+  }, [map, match]);
+
+  return null;
+}
+
 export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
   const [center, setCenter] = useState<[number, number]>(CEBU_FALLBACK);
   const [gpsGranted, setGpsGranted] = useState(false);
@@ -241,6 +309,11 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
   const [alarmDraft, setAlarmDraft] = useState<AlarmDraft | null>(null);
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarm | null>(null);
+  const [plannerStartName, setPlannerStartName] = useState(TRIP_PLANNER_STOPS[0]?.name ?? '');
+  const [plannerEndName, setPlannerEndName] = useState(
+    TRIP_PLANNER_STOPS[TRIP_PLANNER_STOPS.length - 1]?.name ?? '',
+  );
+  const [plannedTrip, setPlannedTrip] = useState<RouteMatch | null>(null);
 
   // ── Real driver locations polled from the server every 3 s ───────────────
   const [realDrivers, setRealDrivers] = useState<RealDriverLocation[]>([]);
@@ -318,6 +391,40 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
     () => (activeAlarm ? jeepneys.find((j) => j.id === activeAlarm.jeepId) ?? null : null),
     [activeAlarm, jeepneys],
   );
+
+  const selectedStartStop = useMemo(
+    () => TRIP_PLANNER_STOPS.find((stop) => stop.name === plannerStartName) ?? TRIP_PLANNER_STOPS[0],
+    [plannerStartName],
+  );
+
+  const selectedEndStop = useMemo(
+    () => TRIP_PLANNER_STOPS.find((stop) => stop.name === plannerEndName)
+      ?? TRIP_PLANNER_STOPS[TRIP_PLANNER_STOPS.length - 1],
+    [plannerEndName],
+  );
+
+  const plannedRouteName = useMemo(
+    () => TRIP_PLANNER_ROUTES.find((route) => route.id === plannedTrip?.routeId)?.name ?? null,
+    [plannedTrip],
+  );
+
+  useEffect(() => {
+    if (!selectedStartStop || !selectedEndStop || selectedStartStop.order >= selectedEndStop.order) {
+      setPlannedTrip(null);
+      return;
+    }
+
+    const match = findBestRoute(
+      selectedStartStop.coords as PlannerCoordinates,
+      selectedEndStop.coords as PlannerCoordinates,
+      TRIP_PLANNER_ROUTES,
+    );
+
+    setPlannedTrip(match);
+    if (match) {
+      setCenter(match.boardingPoint);
+    }
+  }, [selectedEndStop, selectedStartStop]);
 
   const openAlarmModal = (jeep: CommuterJeepney) => {
     setAlarmDraft({ jeepId: jeep.id, route: jeep.route, thresholdKm: 1 });
@@ -411,6 +518,57 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
         </div>
       )}
 
+      <div className="absolute top-16 left-4 z-[1150] w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md shadow-xl p-4 space-y-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600">Trip Planner</p>
+          <h2 className="text-sm font-semibold text-slate-900">Jeepney route preview</h2>
+          <p className="text-[11px] text-slate-500">Sample trip planning from Ayala to IT Park is now visible here.</p>
+        </div>
+
+        <label className="block text-xs font-medium text-slate-600">
+          Start
+          <select
+            value={plannerStartName}
+            onChange={(e) => setPlannerStartName(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
+          >
+            {TRIP_PLANNER_STOPS.map((stop) => (
+              <option key={`start-${stop.order}`} value={stop.name}>{stop.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block text-xs font-medium text-slate-600">
+          Destination
+          <select
+            value={plannerEndName}
+            onChange={(e) => setPlannerEndName(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
+          >
+            {TRIP_PLANNER_STOPS.map((stop) => (
+              <option key={`end-${stop.order}`} value={stop.name}>{stop.name}</option>
+            ))}
+          </select>
+        </label>
+
+        {selectedStartStop && selectedEndStop && selectedStartStop.order >= selectedEndStop.order ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Choose a later stop as the destination to preview the route.
+          </div>
+        ) : plannedTrip ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-slate-700 space-y-1">
+            <p><span className="font-semibold text-slate-900">Suggested route:</span> {plannedRouteName ?? plannedTrip.routeId}</p>
+            <p><span className="font-semibold text-slate-900">Boarding point:</span> {selectedStartStop?.name}</p>
+            <p><span className="font-semibold text-slate-900">Alighting point:</span> {selectedEndStop?.name}</p>
+            <p><span className="font-semibold text-slate-900">Estimated walking:</span> {Math.round(plannedTrip.walkDistance)} m</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            No route matched the walking threshold.
+          </div>
+        )}
+      </div>
+
       <MapContainer
         center={center}
         zoom={15}
@@ -432,6 +590,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
         />
 
         <FlyToLocation center={center} />
+        <RoutePlannerLayer match={plannedTrip} />
 
         {userPos && (
           <Marker position={[userPos.lat, userPos.lng]} icon={userDotIcon}>
