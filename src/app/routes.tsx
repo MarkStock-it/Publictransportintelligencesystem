@@ -1,15 +1,16 @@
 import { createHashRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import LoginPage from "./pages/LoginPage";
+import CommuterPage from "./pages/CommuterPage";
+import DriverPage from "./pages/DriverPage";
+import { LGUDashboard } from "./components/LGUDashboard";
 
 export const router = createHashRouter([
   // Public: login
   {
     path: "/login",
-    lazy: async () => {
-      const module = await import("./pages/LoginPage");
-      return { Component: module.default };
-    },
+    Component: LoginPage,
     errorElement: <ErrorBoundary />,
   },
 
@@ -21,10 +22,7 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        lazy: async () => {
-          const module = await import("./pages/CommuterPage");
-          return { Component: module.default };
-        },
+        Component: CommuterPage,
       },
     ],
   },
@@ -37,10 +35,7 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        lazy: async () => {
-          const module = await import("./pages/DriverPage");
-          return { Component: module.default };
-        },
+        Component: DriverPage,
       },
     ],
   },
@@ -53,10 +48,7 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        lazy: async () => {
-          const module = await import("./components/LGUDashboard");
-          return { Component: module.LGUDashboard };
-        },
+        Component: LGUDashboard,
       },
     ],
   },

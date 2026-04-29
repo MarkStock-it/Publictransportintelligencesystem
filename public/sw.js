@@ -1,5 +1,20 @@
-const VERSION = 'largo-static-v1';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest'];
+const VERSION = 'largo-static-v2';
+
+function getBasePath() {
+  const path = new URL(self.location.href).pathname;
+  return path.endsWith('/sw.js') ? path.slice(0, -'/sw.js'.length) || '/' : '/';
+}
+
+const BASE_PATH = getBasePath();
+const APP_SHELL = [
+  BASE_PATH,
+  `${BASE_PATH.replace(/\/$/, '')}/index.html`,
+  `${BASE_PATH.replace(/\/$/, '')}/manifest.webmanifest`,
+];
+
+function isAppNavigationRequest(request) {
+  return request.mode === 'navigate';
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -22,6 +37,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) {
@@ -31,12 +50,18 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request)
         .then((response) => {
           const cloned = response.clone();
-          if (response.ok && event.request.url.startsWith(self.location.origin)) {
+          if (response.ok) {
             void caches.open(VERSION).then((cache) => cache.put(event.request, cloned));
           }
           return response;
         })
-        .catch(() => caches.match('/index.html'));
+        .catch(() => {
+          if (isAppNavigationRequest(event.request)) {
+            return caches.match(`${BASE_PATH.replace(/\/$/, '')}/index.html`);
+          }
+
+          return Response.error();
+        }),
     }),
   );
 });
