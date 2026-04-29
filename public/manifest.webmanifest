@@ -1,0 +1,9 @@
+{
+  "name": "LarGo",
+  "short_name": "LarGo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4285f4",
+  "icons": []
+}
