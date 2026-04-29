@@ -181,7 +181,7 @@ export function PinpointAlarm() {
       {/* ── Control panel ─────────────────────────────────────────────── */}
       <div
         style={{ zIndex: 1200 }}
-        className="absolute right-4 top-[8.25rem] w-[min(23rem,calc(100vw-2rem))] select-none sm:right-4 sm:top-20"
+        className="absolute right-4 top-24 w-[min(23rem,calc(100vw-2rem))] select-none sm:right-4 sm:top-24"
       >
         {/* Toggle header */}
         <button
@@ -200,11 +200,11 @@ export function PinpointAlarm() {
         </button>
 
         {panelOpen && (
-          <div className="bg-white/95 rounded-b-2xl shadow-xl border border-t-0 border-indigo-100 p-4 backdrop-blur-sm flex flex-col gap-3.5">
+          <div className="bg-white/95 rounded-b-2xl shadow-xl border border-t-0 border-indigo-100 p-4 backdrop-blur-sm flex flex-col gap-3.5 pinpoint-alarm-panel">
 
             {isPinMode && (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800">
-                Pin mode active. Click anywhere on the map to place your pin.
+              <div className="rounded-lg border-2 border-indigo-400 bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 text-xs font-semibold text-indigo-800 animate-pulse">
+                📍 Pin mode active. Click anywhere on the map to place your pin.
               </div>
             )}
 
@@ -256,22 +256,23 @@ export function PinpointAlarm() {
               <button
                 onClick={() => setIsPinMode((m) => !m)}
                 aria-pressed={isPinMode}
-                aria-label="Toggle pin placement mode"
-                className={`min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                aria-label={isPinMode ? 'Cancel pin placement mode' : 'Toggle pin placement mode'}
+                className={`min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   isPinMode
-                    ? 'bg-indigo-700 text-white ring-2 ring-indigo-200 shadow-md shadow-indigo-400/35'
-                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                    ? 'bg-indigo-700 text-white ring-2 ring-offset-2 ring-indigo-300 shadow-lg shadow-indigo-500/40 hover:bg-indigo-800 active:scale-95'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:shadow-md active:scale-95'
                 }`}
               >
                 <MapPin size={13} />
-                {isPinMode ? 'Click map to pin…' : pin ? 'Move Pin' : 'Set Pin'}
+                {isPinMode ? '📍 Click map to pin…' : pin ? 'Move Pin' : 'Set Pin'}
                 {isPinMode && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />}
               </button>
 
               {isArmed && !hasTriggered && (
                 <button
                   onClick={cancelAlarm}
-                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-colors"
+                  aria-label="Disarm the pinpoint alarm"
+                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-all hover:shadow-md active:scale-95"
                 >
                   <BellOff size={13} />
                   Disarm
@@ -281,7 +282,8 @@ export function PinpointAlarm() {
               {!isArmed && !hasTriggered && pin && (
                 <button
                   onClick={resetAlarm}
-                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                  aria-label="Arm the pinpoint alarm"
+                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all hover:shadow-md active:scale-95"
                 >
                   <BellRing size={13} />
                   Arm
@@ -291,7 +293,8 @@ export function PinpointAlarm() {
               {hasTriggered && (
                 <button
                   onClick={resetAlarm}
-                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                  aria-label="Reset the pinpoint alarm"
+                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition-all hover:shadow-md active:scale-95"
                 >
                   <RotateCcw size={13} />
                   Reset
@@ -301,7 +304,8 @@ export function PinpointAlarm() {
               {pin && (
                 <button
                   onClick={clearPin}
-                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  aria-label="Clear pinpoint alarm"
+                  className="min-h-11 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-all hover:shadow-md active:scale-95"
                 >
                   <X size={13} />
                   Clear

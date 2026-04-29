@@ -653,45 +653,53 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       <Toaster position="top-center" richColors />
 
       {/* Top status bar */}
-      <div className="map-float absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md">
+      <div className="map-float absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-white/10 animate-slide-in-top">
         <div className="flex items-center gap-2">
           <button
-            aria-label="Toggle trip planner"
+            aria-label="Toggle trip planner sidebar"
             onClick={() => setIsTripPlannerOpen((prev) => !prev)}
-            className="h-11 w-11 rounded-xl border border-white/20 bg-white/10 text-white flex items-center justify-center sm:hidden"
+            className="h-11 w-11 rounded-lg border border-white/20 bg-white/10 text-white flex items-center justify-center sm:hidden hover:bg-white/15 transition-all active:scale-95"
+            title="Toggle trip planner"
           >
             ☰
           </button>
-          <span className="text-sm font-black text-white tracking-tight">LarGo</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-300/70 bg-indigo-500/20 px-2 py-0.5 rounded-full">Commuter</span>
+          <span className="text-base font-black text-white tracking-tight">LarGo</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300/80 bg-indigo-500/25 px-2 py-0.5 rounded-full border border-indigo-400/20">Commuter</span>
         </div>
-        <div className="flex items-center gap-2">
-          {locating && <span className="text-xs text-indigo-300 animate-pulse">Locating…</span>}
-          {!locating && gpsGranted && (
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
-              GPS
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          {locating && (
+            <span className="text-xs text-indigo-300 animate-pulse flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse" />
+              Locating…
             </span>
           )}
-          {!locating && !gpsGranted && <span className="text-[11px] text-white/30">Cebu City</span>}
-          <span className="text-[11px] font-medium text-white/50">{jeepneys.length} jeeps</span>
+          {!locating && gpsGranted && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
+              GPS Active
+            </span>
+          )}
+          {!locating && !gpsGranted && <span className="text-[11px] text-white/40 font-medium">Cebu City</span>}
+          <span className="text-[11px] font-semibold text-white/60 bg-white/5 px-2 py-1 rounded-full">{jeepneys.length} Jeeps</span>
           {realDrivers.length > 0 && (
-            <span className="flex items-center gap-1 text-[11px] font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/25 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/30 px-2 py-1 rounded-full">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-              {realDrivers.length} live
+              {realDrivers.length} Live
             </span>
           )}
           <button
-            aria-label="Toggle dark mode"
+            aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-            className="h-11 w-11 rounded-xl border border-white/15 bg-white/10 text-white flex items-center justify-center"
+            className="h-11 w-11 rounded-lg border border-white/15 bg-white/10 text-white flex items-center justify-center hover:bg-white/15 transition-all active:scale-95"
+            title={`${resolvedTheme === 'dark' ? 'Light' : 'Dark'} mode`}
           >
-            {resolvedTheme === 'dark' ? '☀' : '☾'}
+            {resolvedTheme === 'dark' ? '☀️' : '🌙'}
           </button>
           {onLogout && (
             <button
               onClick={onLogout}
-              className="ml-1 min-h-11 px-3 text-[11px] font-semibold text-white/30 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5"
+              aria-label="Sign out"
+              className="min-h-11 px-3 text-[11px] font-semibold text-white/50 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5 active:scale-95"
             >
               Sign out
             </button>
@@ -701,11 +709,12 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
       {/* Active alarm banner */}
       {isAlarmActive && activeAlarm && trackedJeep && (
-        <div className="map-float absolute top-12 left-1/2 -translate-x-1/2 z-[1150] w-[min(95vw,560px)] bg-blue-600 text-white rounded-xl px-4 py-2.5">
+        <div className="map-float absolute top-16 left-1/2 -translate-x-1/2 z-[1150] w-[min(95vw,560px)] bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-4 py-3 shadow-lg border border-blue-500/50 animate-slide-in-top">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">
-                Tracking {activeAlarm.jeepId} · Alarm at {activeAlarm.thresholdKm}km
+              <p className="text-sm font-bold truncate flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse" />
+                Tracking {activeAlarm.jeepId} · Alert at {activeAlarm.thresholdKm}km
               </p>
               <p className="text-xs text-blue-100 truncate">
                 {trackedJeep.id} is {formatDistance(distanceKm)}
@@ -713,7 +722,8 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
             </div>
             <button
               onClick={clearAlarm}
-              className="text-xs font-semibold bg-white/15 hover:bg-white/25 px-3 py-1 rounded-md"
+              aria-label="Cancel active alarm"
+              className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-2 rounded-md transition-colors whitespace-nowrap"
             >
               Cancel
             </button>
@@ -722,7 +732,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       )}
 
       <div
-        className={`map-float absolute z-[1150] rounded-[8px] border border-slate-200 bg-white/95 backdrop-blur-md p-6 transition-all duration-200 ease-in-out
+        className={`map-float absolute z-[1150] rounded-[8px] border border-slate-200 bg-white/95 backdrop-blur-md p-6 transition-all duration-200 ease-in-out shadow-lg
           ${isMobileView
             ? `left-2 right-2 bottom-2 ${isTripPlannerOpen ? 'translate-y-0 opacity-100' : 'translate-y-[115%] opacity-0 pointer-events-none'}`
             : 'top-20 left-4 w-[min(94vw,380px)] opacity-100'}`}
@@ -738,10 +748,10 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
           plannerTouchStartY.current = null;
         }}
       >
-        <div className="rounded-[8px] bg-gradient-to-r from-[#4285F4] via-[#357AE8] to-[#10B981] px-4 py-3 text-white shadow-lg">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">Trip Planner</p>
-          <h2 className="text-[clamp(1rem,2.6vw,1.15rem)] font-semibold text-white">Jeepney route preview</h2>
-          <p className="text-[clamp(0.75rem,2.2vw,0.82rem)] leading-relaxed text-blue-100">Select a start and destination stop to preview route, boarding point, and walking distance.</p>
+        <div className="rounded-t-lg bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 px-6 py-4 text-white shadow-md border-b border-blue-700/50">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/80">🚍 Trip Planner</p>
+          <h2 className="text-[clamp(1.05rem,2.8vw,1.25rem)] font-bold text-white mt-1">Find your jeepney</h2>
+          <p className="text-[clamp(0.8rem,2.4vw,0.9rem)] leading-relaxed text-blue-100 mt-1.5">Select start and destination to see available routes and travel distance.</p>
         </div>
 
         <datalist id="commuter-stop-options">
@@ -758,7 +768,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
               value={plannerStartInput}
               onChange={(e) => setPlannerStartInput(e.target.value)}
               placeholder="Choose start stop"
-              className="mt-1.5 min-h-11 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow-md focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-1"
               aria-label="Start stop"
             />
           </label>
@@ -770,27 +780,31 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
               value={plannerEndInput}
               onChange={(e) => setPlannerEndInput(e.target.value)}
               placeholder="Choose destination stop"
-              className="mt-1.5 min-h-11 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow-md focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-1"
               aria-label="Destination stop"
             />
           </label>
 
           <button
             onClick={swapPlannerPoints}
-            className="min-h-11 rounded-[8px] border border-indigo-200 bg-indigo-50 px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+            className="min-h-11 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition-all hover:shadow-md active:scale-95"
           >
-            Swap start and destination
+            ⇄ Swap start and destination
           </button>
 
           {recentSearches.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-600 font-semibold">Recent:</span>
               {recentSearches.map((entry) => (
                 <button
                   key={`${entry.start}-${entry.end}`}
                   onClick={() => applyRecentSearch(entry)}
-                  className="min-h-11 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50 transition-all active:scale-95"
+                  title={`${entry.start} → ${entry.end}`}
                 >
-                  {entry.start} → {entry.end}
+                  <span>{entry.start}</span>
+                  <span className="text-slate-400">→</span>
+                  <span>{entry.end}</span>
                 </button>
               ))}
             </div>
@@ -798,35 +812,39 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
         </div>
 
         {selectedStartStop && selectedEndStop && selectedStartStop.order >= selectedEndStop.order ? (
-          <div className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-900 shadow-sm">
-            Choose a later stop as the destination to preview the route.
+          <div className="mt-4 rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3 text-xs font-semibold text-amber-900 shadow-sm flex items-center gap-2">
+            ⚠️ Choose a later stop as the destination to preview the route.
           </div>
         ) : isRouteCalculating ? (
-          <div className="mt-4 rounded-[8px] border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-800 flex items-center gap-2 shadow-sm">
-            <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            Calculating best route...
+          <div className="mt-4 rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-indigo-100 px-4 py-3 text-sm text-indigo-900 flex items-center gap-3 shadow-sm animate-pulse">
+            <div className="inline-block h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="font-semibold">Calculating best route...</span>
           </div>
         ) : plannedTrip ? (
-          <div className="mt-4 rounded-[8px] border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-slate-800 space-y-1.5 shadow-sm">
-            <p><span className="font-semibold text-slate-900">Suggested route:</span> {plannedRouteName ?? plannedTrip.routeId}</p>
-            <p><span className="font-semibold text-slate-900">Boarding point:</span> {selectedStartStop?.name}</p>
-            <p><span className="font-semibold text-slate-900">Alighting point:</span> {selectedEndStop?.name}</p>
-            <p><span className="font-semibold text-slate-900">Estimated walking:</span> {Math.round(plannedTrip.walkDistance)} m</p>
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-4 text-sm text-slate-800 space-y-2 shadow-sm">
+            <p className="font-semibold text-emerald-900">✓ Route found!</p>
+            <div className="space-y-1.5 text-xs">
+              <p><span className="font-semibold text-slate-900">Route:</span> {plannedRouteName ?? plannedTrip.routeId}</p>
+              <p><span className="font-semibold text-slate-900">Boarding:</span> {selectedStartStop?.name}</p>
+              <p><span className="font-semibold text-slate-900">Alighting:</span> {selectedEndStop?.name}</p>
+              <p><span className="font-semibold text-slate-900">Walk distance:</span> {Math.round(plannedTrip.walkDistance)} m</p>
+            </div>
           </div>
         ) : routeLookupError ? (
-          <div className="mt-4 rounded-[8px] border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-800 shadow-sm">
-            {routeLookupError}
+          <div className="mt-4 rounded-lg border border-red-300 bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 text-sm font-semibold text-red-800 shadow-sm flex items-center gap-2">
+            ❌ {routeLookupError}
           </div>
         ) : (
-          <div className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 shadow-sm">
-            No route matched the walking threshold.
+          <div className="mt-4 rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm flex items-center gap-2">
+            ℹ️ No route matched. Try different stops or check walking distance.
           </div>
         )}
 
         {isMobileView && (
           <button
             onClick={() => setIsTripPlannerOpen(false)}
-            className="mt-3 w-full min-h-11 rounded-[8px] border border-slate-200 bg-white text-sm font-semibold text-slate-600"
+            aria-label="Close trip planner"
+            className="mt-4 w-full min-h-11 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all active:scale-95"
           >
             Close planner
           </button>
@@ -911,53 +929,52 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
             }}
           >
             <Popup className="jeep-popup">
-              <div className="jeep-popup-card min-w-[180px] space-y-2 py-0.5">
+              <div className="jeep-popup-card min-w-[200px] space-y-2.5 py-1">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-sm font-bold text-gray-900">{jeep.id}</span>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${SEAT_BG[jeep.seatStatus]}`}>
-                    {SEAT_LABEL[jeep.seatStatus]}
+                  <span className="font-mono text-base font-bold text-gray-900">{jeep.id}</span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${SEAT_BG[jeep.seatStatus]}`}>
+                    {jeep.seatStatus === 'full' ? '🔴 Full' : '🟢 Available'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ROUTE_BADGE_BG[plannedTrip?.routeId ?? '21FE'] ?? 'bg-blue-100 text-blue-800 border-blue-300'}`}>
-                    {jeep.route}
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${ROUTE_BADGE_BG[plannedTrip?.routeId ?? '21FE'] ?? 'bg-blue-100 text-blue-800 border-blue-300'}`}>
+                    Route {jeep.route}
                   </span>
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    ETA {estimateEtaMinutes(Math.max(0.4, Math.random() * 2.4))} min
+                  <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                    ~{estimateEtaMinutes(Math.max(0.4, Math.random() * 2.4))} min
                   </span>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700">Occupancy</span>
+                    <span className="text-xs text-slate-600">{jeep.seatStatus === 'full' ? '96%' : jeep.seatStatus === 'few' ? '68%' : '42%'}</span>
+                  </div>
                   <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                     <span
                       className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-300"
                       style={{ width: jeep.seatStatus === 'full' ? '96%' : jeep.seatStatus === 'few' ? '68%' : '42%' }}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-600">Live passenger gauge</p>
                 </div>
 
-                <p className="text-xs font-medium text-blue-700 leading-snug">Next stop in {Math.max(1, Math.floor(Math.random() * 4) + 1)} min</p>
-                {userPos && (
-                  <p className="text-xs text-slate-600">
-                    Approx. {formatDistance(
-                      Math.hypot((jeep.lat - userPos.lat) * 111, (jeep.lng - userPos.lng) * 111),
-                    )} from you
-                  </p>
-                )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setAlarmDraft({ jeepId: jeep.id, route: jeep.route, thresholdKm: 1 });
-                      toast.success('Approach notification enabled for this jeep.');
-                    }}
-                    className="min-h-11 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white"
-                  >
-                    Notify when nearby
-                  </button>
-                  <span className="text-[11px] text-slate-500">Wait ~{estimateEtaMinutes(Math.max(0.4, Math.random() * 2.1))} min</span>
+                <div className="border-t border-slate-200 pt-2 text-xs text-slate-700 space-y-1">
+                  <p>📍 <span className="font-semibold">Next stop in {Math.max(1, Math.floor(Math.random() * 4) + 1)} min</span></p>
+                  {userPos && (
+                    <p>📏 <span className="font-semibold">{formatDistance(Math.hypot((jeep.lat - userPos.lat) * 111, (jeep.lng - userPos.lng) * 111))}</span> from you</p>
+                  )}
                 </div>
+
+                <button
+                  onClick={() => {
+                    setAlarmDraft({ jeepId: jeep.id, route: jeep.route, thresholdKm: 1 });
+                    toast.success('Approach notification enabled.');
+                  }}
+                  className="w-full min-h-10 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-3 text-xs font-bold text-white hover:from-blue-700 hover:to-blue-600 transition-all active:scale-95"
+                >
+                  🔔 Notify when nearby
+                </button>
               </div>
             </Popup>
           </Marker>
@@ -967,16 +984,17 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </MapContainer>
 
       {/* Zoom controls */}
-      <div className="map-float absolute bottom-28 right-4 z-[1100] flex flex-col gap-2">
+      <div className="map-float absolute bottom-56 right-4 z-[1100] flex flex-col gap-2.5 animate-slide-in-right">
         {(['+', '−'] as const).map((label) => (
           <button
             key={label}
-            aria-label={label === '+' ? 'Zoom in' : 'Zoom out'}
+            aria-label={label === '+' ? 'Zoom in map' : 'Zoom out map'}
             onClick={() => {
               const map = (document.querySelector('.leaflet-container') as { _leaflet_map?: { zoomIn: () => void; zoomOut: () => void } } | null)?._leaflet_map;
               if (map) label === '+' ? map.zoomIn() : map.zoomOut();
             }}
-            className="w-11 h-11 bg-gradient-to-br from-slate-900/90 to-slate-700/90 backdrop-blur-sm border border-white/20 rounded-full shadow-xl text-white font-black text-lg flex items-center justify-center hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+            className="w-12 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg shadow-lg text-slate-700 dark:text-white font-bold text-xl flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition-all duration-200"
+            title={label === '+' ? 'Zoom in' : 'Zoom out'}
           >
             {label}
           </button>
@@ -984,58 +1002,61 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </div>
 
       {/* Seat status legend */}
-      <div className="map-float absolute bottom-4 left-4 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2">
+      <div className="map-float absolute bottom-4 left-4 z-[1100] flex items-center gap-4 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2.5 shadow-lg animate-slide-in-left">
         {(['many', 'full'] as const).map((status) => (
-          <div key={status} className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
-            <span className="text-xs text-white/50">{SEAT_LABEL[status]}</span>
+          <div key={status} className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
+            <span className="text-xs font-medium text-white/70">{SEAT_LABEL[status]}</span>
           </div>
         ))}
       </div>
 
       {plannedTrip && selectedStartStop && selectedEndStop && (
-        <div className="map-float absolute bottom-4 left-1/2 -translate-x-1/2 z-[1110] w-[min(95vw,740px)] rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md p-4">
+        <div className="map-float absolute bottom-20 left-1/2 -translate-x-1/2 z-[1110] w-[min(95vw,740px)] rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md p-4 shadow-lg animate-slide-in-bottom">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-slate-900">Route details</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => toggleFavoriteRoute(plannedTrip.routeId)}
-                className="min-h-11 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                aria-label={favoriteRouteIds.includes(plannedTrip.routeId) ? "Remove from favorites" : "Save to favorites"}
+                className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:shadow-md transition-all active:scale-95"
               >
-                {favoriteRouteIds.includes(plannedTrip.routeId) ? 'Saved' : 'Save to favorites'}
+                {favoriteRouteIds.includes(plannedTrip.routeId) ? '⭐ Saved' : '☆ Save'}
               </button>
               <button
                 onClick={() => setIsBottomInfoOpen((prev) => !prev)}
-                className="min-h-11 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+                aria-label={isBottomInfoOpen ? "Collapse route details" : "Expand route details"}
+                className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:shadow-md transition-all active:scale-95"
               >
-                {isBottomInfoOpen ? 'Collapse' : 'Expand'}
+                {isBottomInfoOpen ? '−' : '+'}
               </button>
             </div>
           </div>
 
           {isBottomInfoOpen && (
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-500">Step-by-step</p>
-                <ol className="mt-2 space-y-1 text-xs text-slate-700">
-                  <li>1. Walk to {selectedStartStop.name}</li>
-                  <li>2. Ride {plannedRouteName ?? plannedTrip.routeId}</li>
-                  <li>3. Alight at {selectedEndStop.name}</li>
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4 hover:shadow-md transition-all">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Step-by-step</p>
+                <ol className="space-y-2 text-xs text-slate-700">
+                  <li className="flex gap-2"><span className="font-bold text-indigo-600">1.</span> <span>Walk to {selectedStartStop.name}</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-indigo-600">2.</span> <span>Ride {plannedRouteName ?? plannedTrip.routeId}</span></li>
+                  <li className="flex gap-2"><span className="font-bold text-indigo-600">3.</span> <span>Alight at {selectedEndStop.name}</span></li>
                 </ol>
               </div>
 
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-500">Fare breakdown</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">Regular: ₱13.00 + ₱{Math.max(0, Math.round((plannerPathDistanceKm(plannedRoute, plannedTrip.boardingPoint, plannedTrip.alightingPoint) - 4) * 2)).toFixed(0)}</p>
-                <p className="text-xs text-slate-600">Student/Senior: about 20% discount</p>
+              <div className="rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 p-4 hover:shadow-md transition-all">
+                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-3">Fare breakdown</p>
+                <p className="text-base font-bold text-emerald-900">₱13.00 + ₱{Math.max(0, Math.round((plannerPathDistanceKm(plannedRoute, plannedTrip.boardingPoint, plannedTrip.alightingPoint) - 4) * 2)).toFixed(0)}</p>
+                <p className="text-xs text-emerald-700 mt-2">Student/Senior: 20% off</p>
               </div>
 
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-500">Alternatives</p>
-                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+              <div className="rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 p-4 hover:shadow-md transition-all">
+                <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3">Alternatives</p>
+                <ul className="space-y-1.5 text-xs text-amber-800">
                   {routeOptions.slice(0, 3).map((option) => (
-                    <li key={`${option.routeId}-${option.walkDistance}`}>
-                      {option.routeId} · walk {Math.round(option.walkDistance)} m
+                    <li key={`${option.routeId}-${option.walkDistance}`} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span>{option.routeId} · {Math.round(option.walkDistance)}m walk</span>
                     </li>
                   ))}
                 </ul>
@@ -1047,24 +1068,24 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
       {/* Alarm panel/modal */}
       {alarmDraft && (
-        <div className="absolute inset-0 z-[1200] bg-black/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4">
+        <div className="absolute inset-0 z-[1200] bg-black/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl shadow-2xl p-6 space-y-5 animate-scale-in">
             <div>
-              <h2 className="text-base font-bold text-white">Set Jeepney Alarm</h2>
-              <p className="text-xs text-white/40 mt-1">Get alerted when this jeepney gets close.</p>
+              <h2 className="text-lg font-bold text-white">Set Jeepney Alarm</h2>
+              <p className="text-xs text-white/50 mt-2">Get alerted when this jeepney gets close to your location.</p>
             </div>
 
-            <div className="bg-white/[0.05] border border-white/10 rounded-xl p-3 space-y-1">
+            <div className="bg-white/[0.05] border border-white/10 rounded-lg p-4 space-y-2">
               <p className="text-sm font-mono font-bold text-white">{alarmDraft.jeepId}</p>
-              <p className="text-xs text-white/40">{alarmDraft.route}</p>
+              <p className="text-xs text-white/50">{alarmDraft.route}</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label htmlFor="alarm-distance" className="text-xs font-semibold text-white/40 uppercase tracking-wider">
-                  Distance
+                <label htmlFor="alarm-distance" className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                  Alert Distance
                 </label>
-                <span className="text-sm font-bold text-indigo-300">{alarmDraft.thresholdKm}km</span>
+                <span className="text-base font-bold text-indigo-300">{alarmDraft.thresholdKm}km</span>
               </div>
               <input
                 id="alarm-distance"
@@ -1074,25 +1095,25 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
                 step={1}
                 value={alarmDraft.thresholdKm}
                 onChange={(e) => setAlarmDraft((prev) => (prev ? { ...prev, thresholdKm: Number(e.target.value) } : prev))}
-                className="w-full accent-indigo-400"
+                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-indigo-400"
               />
-              <div className="flex justify-between text-[11px] text-white/25 px-0.5">
+              <div className="flex justify-between text-[11px] text-white/40 px-1">
                 <span>1km</span>
                 <span>2km</span>
                 <span>3km</span>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex gap-3 pt-2">
               <button
                 onClick={setAlarm}
-                className="flex-1 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 text-white text-sm font-bold py-2.5 rounded-xl shadow-lg shadow-indigo-900/40 transition-all"
+                className="flex-1 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 active:scale-95 text-white text-sm font-bold py-3 rounded-lg shadow-lg shadow-indigo-900/40 transition-all"
               >
                 Set Alarm
               </button>
               <button
                 onClick={() => setAlarmDraft(null)}
-                className="flex-1 bg-white/[0.07] hover:bg-white/10 border border-white/10 text-white/60 text-sm font-semibold py-2.5 rounded-xl transition-all"
+                className="flex-1 bg-white/[0.07] hover:bg-white/10 active:scale-95 border border-white/10 text-white/70 text-sm font-semibold py-3 rounded-lg transition-all"
               >
                 Cancel
               </button>
