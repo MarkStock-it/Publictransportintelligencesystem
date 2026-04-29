@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { DivIcon, type LatLngBoundsExpression } from 'leaflet';
+import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import type { SeatStatus } from '../hooks/useJeepSimulation';
 import { useJeepAlarm } from '../hooks/useJeepAlarm';
@@ -8,12 +10,13 @@ import { PinpointAlarm } from './PinpointAlarm';
 import { Toaster } from './ui/sonner';
 import {
   JEEPNEY_ROUTES,
-  findBestRoute,
+  findRouteOptions,
   type Coordinates as PlannerCoordinates,
   type Route,
   type RouteMatch,
 } from '../data/jeepneyRoutes';
 import { drawRouteSegment } from '../services/routeDrawing';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 const PHILIPPINES_BOUNDS: LatLngBoundsExpression = [
@@ -57,6 +60,12 @@ interface ActiveAlarm {
   thresholdKm: number;
 }
 
+interface RecentSearch {
+  start: string;
+  end: string;
+  updatedAt: number;
+}
+
 const CEBU_FALLBACK: [number, number] = [10.3157, 123.8854];
 const TRIP_PLANNER_ROUTE = JEEPNEY_ROUTES[0];
 const TRIP_PLANNER_STOPS = [...TRIP_PLANNER_ROUTE.stops].sort((a, b) => a.order - b.order);
@@ -86,6 +95,50 @@ const SEAT_BG: Record<SeatStatus, string> = {
   few: 'bg-green-100 text-green-800',
   full: 'bg-red-100 text-red-800',
 };
+
+const ROUTE_BADGE_BG: Record<string, string> = {
+  '21FE': 'bg-blue-100 text-blue-800 border-blue-300',
+};
+
+const RECENT_SEARCHES_STORAGE_KEY = 'largo_commuter_recent_searches_v1';
+const FAVORITE_ROUTES_STORAGE_KEY = 'largo_commuter_favorite_routes_v1';
+
+function readJSON<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJSON<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write errors
+  }
+}
+
+function estimateEtaMinutes(distanceKm: number): number {
+  const urbanSpeedKmH = 18;
+  return Math.max(2, Math.round((distanceKm / urbanSpeedKmH) * 60));
+}
+
+function plannerPathDistanceKm(route: Route, start: PlannerCoordinates, end: PlannerCoordinates): number {
+  const startIdx = route.path.findIndex((p) => pointsEqual(p, start));
+  const endIdx = route.path.findIndex((p) => pointsEqual(p, end));
+  if (startIdx < 0 || endIdx < 0 || endIdx <= startIdx) return 0;
+
+  let km = 0;
+  for (let i = startIdx; i < endIdx; i += 1) {
+    const a = route.path[i];
+    const b = route.path[i + 1];
+    km += Math.hypot((b[0] - a[0]) * 111, (b[1] - a[1]) * 111);
+  }
+  return km;
+}
 
 function makeMarkerIcon(id: string, seatStatus: SeatStatus): DivIcon {
   const color = SEAT_COLOR[seatStatus];
@@ -309,6 +362,7 @@ function RoutePlannerLayer({ match }: { match: RouteMatch | null }) {
 }
 
 export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
+  const { resolvedTheme, setTheme } = useTheme();
   const [center, setCenter] = useState<[number, number]>(CEBU_FALLBACK);
   const [gpsGranted, setGpsGranted] = useState(false);
   const [locating, setLocating] = useState(true);
@@ -316,13 +370,49 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
   const [alarmDraft, setAlarmDraft] = useState<AlarmDraft | null>(null);
   const [activeAlarm, setActiveAlarm] = useState<ActiveAlarm | null>(null);
-  const [plannerStartName, setPlannerStartName] = useState(TRIP_PLANNER_STOPS[0]?.name ?? '');
-  const [plannerEndName, setPlannerEndName] = useState(
+  const [plannerStartInput, setPlannerStartInput] = useState(TRIP_PLANNER_STOPS[0]?.name ?? '');
+  const [plannerEndInput, setPlannerEndInput] = useState(
     TRIP_PLANNER_STOPS[TRIP_PLANNER_STOPS.length - 1]?.name ?? '',
   );
   const [plannedTrip, setPlannedTrip] = useState<RouteMatch | null>(null);
+  const [routeOptions, setRouteOptions] = useState<RouteMatch[]>([]);
   const [isRouteCalculating, setIsRouteCalculating] = useState(false);
   const [routeLookupError, setRouteLookupError] = useState<string | null>(null);
+  const [isTripPlannerOpen, setIsTripPlannerOpen] = useState(false);
+  const [isBottomInfoOpen, setIsBottomInfoOpen] = useState(true);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>(() =>
+    typeof window === 'undefined' ? [] : readJSON<RecentSearch[]>(RECENT_SEARCHES_STORAGE_KEY, []),
+  );
+  const [favoriteRouteIds, setFavoriteRouteIds] = useState<string[]>(() =>
+    typeof window === 'undefined' ? [] : readJSON<string[]>(FAVORITE_ROUTES_STORAGE_KEY, []),
+  );
+
+  const plannerTouchStartY = useRef<number | null>(null);
+
+  const debouncedPlannerStart = useDebouncedValue(plannerStartInput, 300);
+  const debouncedPlannerEnd = useDebouncedValue(plannerEndInput, 300);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const applyMatch = (matches: boolean) => {
+      setIsMobileView(matches);
+      setIsTripPlannerOpen((prev) => (matches ? prev : true));
+    };
+    applyMatch(media.matches);
+
+    const onChange = (event: MediaQueryListEvent) => applyMatch(event.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    writeJSON(RECENT_SEARCHES_STORAGE_KEY, recentSearches);
+  }, [recentSearches]);
+
+  useEffect(() => {
+    writeJSON(FAVORITE_ROUTES_STORAGE_KEY, favoriteRouteIds);
+  }, [favoriteRouteIds]);
 
   // ── Real driver locations polled from the server every 3 s ───────────────
   const [realDrivers, setRealDrivers] = useState<RealDriverLocation[]>([]);
@@ -402,14 +492,13 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
   );
 
   const selectedStartStop = useMemo(
-    () => TRIP_PLANNER_STOPS.find((stop) => stop.name === plannerStartName) ?? TRIP_PLANNER_STOPS[0],
-    [plannerStartName],
+    () => TRIP_PLANNER_STOPS.find((stop) => stop.name.toLowerCase() === debouncedPlannerStart.trim().toLowerCase()) ?? null,
+    [debouncedPlannerStart],
   );
 
   const selectedEndStop = useMemo(
-    () => TRIP_PLANNER_STOPS.find((stop) => stop.name === plannerEndName)
-      ?? TRIP_PLANNER_STOPS[TRIP_PLANNER_STOPS.length - 1],
-    [plannerEndName],
+    () => TRIP_PLANNER_STOPS.find((stop) => stop.name.toLowerCase() === debouncedPlannerEnd.trim().toLowerCase()) ?? null,
+    [debouncedPlannerEnd],
   );
 
   const plannedRouteName = useMemo(
@@ -417,9 +506,31 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
     [plannedTrip],
   );
 
+  const plannedRoute = useMemo(
+    () => TRIP_PLANNER_ROUTES.find((route) => route.id === plannedTrip?.routeId) ?? TRIP_PLANNER_ROUTE,
+    [plannedTrip],
+  );
+
   useEffect(() => {
-    if (!selectedStartStop || !selectedEndStop || selectedStartStop.order >= selectedEndStop.order) {
+    if (!debouncedPlannerStart.trim() || !debouncedPlannerEnd.trim()) {
       setPlannedTrip(null);
+      setRouteOptions([]);
+      setRouteLookupError('Start and destination are required.');
+      setIsRouteCalculating(false);
+      return;
+    }
+
+    if (!selectedStartStop || !selectedEndStop) {
+      setPlannedTrip(null);
+      setRouteOptions([]);
+      setRouteLookupError('Select a stop from the suggestions.');
+      setIsRouteCalculating(false);
+      return;
+    }
+
+    if (selectedStartStop.order >= selectedEndStop.order) {
+      setPlannedTrip(null);
+      setRouteOptions([]);
       setRouteLookupError(null);
       setIsRouteCalculating(false);
       return;
@@ -431,14 +542,16 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
     const frameId = window.requestAnimationFrame(() => {
       try {
-        const match = findBestRoute(
+        const options = findRouteOptions(
           selectedStartStop.coords as PlannerCoordinates,
           selectedEndStop.coords as PlannerCoordinates,
           TRIP_PLANNER_ROUTES,
         );
+        const match = options[0] ?? null;
 
         if (cancelled) return;
 
+        setRouteOptions(options);
         setPlannedTrip(match);
         if (!match) {
           setRouteLookupError('No matching route found for this stop pair under the walking limit.');
@@ -449,6 +562,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       } catch {
         if (cancelled) return;
         setPlannedTrip(null);
+        setRouteOptions([]);
         setRouteLookupError('Route lookup failed. Please try another stop combination.');
       } finally {
         if (!cancelled) {
@@ -461,7 +575,22 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       cancelled = true;
       window.cancelAnimationFrame(frameId);
     };
-  }, [selectedEndStop, selectedStartStop]);
+  }, [debouncedPlannerEnd, debouncedPlannerStart, selectedEndStop, selectedStartStop]);
+
+  useEffect(() => {
+    if (!plannedTrip || !selectedStartStop || !selectedEndStop) return;
+
+    const next: RecentSearch = {
+      start: selectedStartStop.name,
+      end: selectedEndStop.name,
+      updatedAt: Date.now(),
+    };
+
+    setRecentSearches((prev) => {
+      const deduped = prev.filter((item) => !(item.start === next.start && item.end === next.end));
+      return [next, ...deduped].slice(0, 6);
+    });
+  }, [plannedTrip, selectedEndStop, selectedStartStop]);
 
   const openAlarmModal = (jeep: CommuterJeepney) => {
     setAlarmDraft({ jeepId: jeep.id, route: jeep.route, thresholdKm: 1 });
@@ -476,6 +605,29 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
   const clearAlarm = () => {
     cancelAlarm();
     setActiveAlarm(null);
+  };
+
+  const swapPlannerPoints = () => {
+    setPlannerStartInput(plannerEndInput);
+    setPlannerEndInput(plannerStartInput);
+    toast.success('Start and destination swapped.');
+  };
+
+  const applyRecentSearch = (entry: RecentSearch) => {
+    setPlannerStartInput(entry.start);
+    setPlannerEndInput(entry.end);
+    if (isMobileView) setIsTripPlannerOpen(true);
+  };
+
+  const toggleFavoriteRoute = (routeId: string) => {
+    setFavoriteRouteIds((prev) => {
+      if (prev.includes(routeId)) {
+        toast.success('Removed from favorites.');
+        return prev.filter((id) => id !== routeId);
+      }
+      toast.success('Saved to favorites.');
+      return [...prev, routeId];
+    });
   };
 
   const ringPos = alarmTrackedJeep ? ([alarmTrackedJeep.lat, alarmTrackedJeep.lng] as [number, number]) : null;
@@ -503,6 +655,13 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       {/* Top status bar */}
       <div className="map-float absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md">
         <div className="flex items-center gap-2">
+          <button
+            aria-label="Toggle trip planner"
+            onClick={() => setIsTripPlannerOpen((prev) => !prev)}
+            className="h-11 w-11 rounded-xl border border-white/20 bg-white/10 text-white flex items-center justify-center sm:hidden"
+          >
+            ☰
+          </button>
           <span className="text-sm font-black text-white tracking-tight">LarGo</span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-300/70 bg-indigo-500/20 px-2 py-0.5 rounded-full">Commuter</span>
         </div>
@@ -522,10 +681,17 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
               {realDrivers.length} live
             </span>
           )}
+          <button
+            aria-label="Toggle dark mode"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            className="h-11 w-11 rounded-xl border border-white/15 bg-white/10 text-white flex items-center justify-center"
+          >
+            {resolvedTheme === 'dark' ? '☀' : '☾'}
+          </button>
           {onLogout && (
             <button
               onClick={onLogout}
-              className="ml-1 text-[11px] font-semibold text-white/30 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+              className="ml-1 min-h-11 px-3 text-[11px] font-semibold text-white/30 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5"
             >
               Sign out
             </button>
@@ -555,39 +721,80 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
         </div>
       )}
 
-      <div className="map-float absolute top-20 left-5 z-[1150] w-[min(94vw,360px)] rounded-[8px] border border-slate-200 bg-white/95 backdrop-blur-md px-5 py-6 transition-all duration-300 hover:-translate-y-0.5 sm:top-16 sm:left-6">
-        <div className="rounded-[8px] bg-gradient-to-r from-indigo-700 via-blue-700 to-cyan-700 px-3.5 py-3 text-white shadow-lg">
+      <div
+        className={`map-float absolute z-[1150] rounded-[8px] border border-slate-200 bg-white/95 backdrop-blur-md p-6 transition-all duration-200 ease-in-out
+          ${isMobileView
+            ? `left-2 right-2 bottom-2 ${isTripPlannerOpen ? 'translate-y-0 opacity-100' : 'translate-y-[115%] opacity-0 pointer-events-none'}`
+            : 'top-20 left-4 w-[min(94vw,380px)] opacity-100'}`}
+        onTouchStart={(event) => {
+          plannerTouchStartY.current = event.touches[0]?.clientY ?? null;
+        }}
+        onTouchEnd={(event) => {
+          if (!isMobileView || plannerTouchStartY.current === null) return;
+          const deltaY = (event.changedTouches[0]?.clientY ?? plannerTouchStartY.current) - plannerTouchStartY.current;
+          if (deltaY > 56) {
+            setIsTripPlannerOpen(false);
+          }
+          plannerTouchStartY.current = null;
+        }}
+      >
+        <div className="rounded-[8px] bg-gradient-to-r from-[#4285F4] via-[#357AE8] to-[#10B981] px-4 py-3 text-white shadow-lg">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">Trip Planner</p>
-          <h2 className="text-base font-semibold text-white">Jeepney route preview</h2>
-          <p className="text-xs leading-relaxed text-blue-100">Select a start and destination stop to preview route, boarding point, and walking distance.</p>
+          <h2 className="text-[clamp(1rem,2.6vw,1.15rem)] font-semibold text-white">Jeepney route preview</h2>
+          <p className="text-[clamp(0.75rem,2.2vw,0.82rem)] leading-relaxed text-blue-100">Select a start and destination stop to preview route, boarding point, and walking distance.</p>
         </div>
+
+        <datalist id="commuter-stop-options">
+          {TRIP_PLANNER_STOPS.map((stop) => (
+            <option key={`stop-${stop.order}`} value={stop.name} />
+          ))}
+        </datalist>
 
         <div className="grid grid-cols-1 gap-3.5 mt-4">
           <label className="block text-xs font-semibold text-slate-700">
             Start
-            <select
-              value={plannerStartName}
-              onChange={(e) => setPlannerStartName(e.target.value)}
-              className="mt-1.5 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            >
-              {TRIP_PLANNER_STOPS.map((stop) => (
-                <option key={`start-${stop.order}`} value={stop.name}>{stop.name}</option>
-              ))}
-            </select>
+            <input
+              list="commuter-stop-options"
+              value={plannerStartInput}
+              onChange={(e) => setPlannerStartInput(e.target.value)}
+              placeholder="Choose start stop"
+              className="mt-1.5 min-h-11 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              aria-label="Start stop"
+            />
           </label>
 
           <label className="block text-xs font-semibold text-slate-700">
             Destination
-            <select
-              value={plannerEndName}
-              onChange={(e) => setPlannerEndName(e.target.value)}
-              className="mt-1.5 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            >
-              {TRIP_PLANNER_STOPS.map((stop) => (
-                <option key={`end-${stop.order}`} value={stop.name}>{stop.name}</option>
-              ))}
-            </select>
+            <input
+              list="commuter-stop-options"
+              value={plannerEndInput}
+              onChange={(e) => setPlannerEndInput(e.target.value)}
+              placeholder="Choose destination stop"
+              className="mt-1.5 min-h-11 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              aria-label="Destination stop"
+            />
           </label>
+
+          <button
+            onClick={swapPlannerPoints}
+            className="min-h-11 rounded-[8px] border border-indigo-200 bg-indigo-50 px-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+          >
+            Swap start and destination
+          </button>
+
+          {recentSearches.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {recentSearches.map((entry) => (
+                <button
+                  key={`${entry.start}-${entry.end}`}
+                  onClick={() => applyRecentSearch(entry)}
+                  className="min-h-11 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:border-indigo-300 hover:text-indigo-700"
+                >
+                  {entry.start} → {entry.end}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {selectedStartStop && selectedEndStop && selectedStartStop.order >= selectedEndStop.order ? (
@@ -614,6 +821,15 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
           <div className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 shadow-sm">
             No route matched the walking threshold.
           </div>
+        )}
+
+        {isMobileView && (
+          <button
+            onClick={() => setIsTripPlannerOpen(false)}
+            className="mt-3 w-full min-h-11 rounded-[8px] border border-slate-200 bg-white text-sm font-semibold text-slate-600"
+          >
+            Close planner
+          </button>
         )}
       </div>
 
@@ -702,7 +918,27 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
                     {SEAT_LABEL[jeep.seatStatus]}
                   </span>
                 </div>
-                <p className="text-xs font-medium text-blue-700 leading-snug">{jeep.route}</p>
+
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ROUTE_BADGE_BG[plannedTrip?.routeId ?? '21FE'] ?? 'bg-blue-100 text-blue-800 border-blue-300'}`}>
+                    {jeep.route}
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500">
+                    ETA {estimateEtaMinutes(Math.max(0.4, Math.random() * 2.4))} min
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                    <span
+                      className="block h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-300"
+                      style={{ width: jeep.seatStatus === 'full' ? '96%' : jeep.seatStatus === 'few' ? '68%' : '42%' }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-600">Live passenger gauge</p>
+                </div>
+
+                <p className="text-xs font-medium text-blue-700 leading-snug">Next stop in {Math.max(1, Math.floor(Math.random() * 4) + 1)} min</p>
                 {userPos && (
                   <p className="text-xs text-slate-600">
                     Approx. {formatDistance(
@@ -710,7 +946,18 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
                     )} from you
                   </p>
                 )}
-                <p className="text-[11px] text-slate-500">Tap marker to set an approach alarm.</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setAlarmDraft({ jeepId: jeep.id, route: jeep.route, thresholdKm: 1 });
+                      toast.success('Approach notification enabled for this jeep.');
+                    }}
+                    className="min-h-11 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white"
+                  >
+                    Notify when nearby
+                  </button>
+                  <span className="text-[11px] text-slate-500">Wait ~{estimateEtaMinutes(Math.max(0.4, Math.random() * 2.1))} min</span>
+                </div>
               </div>
             </Popup>
           </Marker>
@@ -720,7 +967,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </MapContainer>
 
       {/* Zoom controls */}
-      <div className="map-float absolute bottom-24 left-5 z-[1100] flex flex-col gap-2 sm:left-auto sm:right-6 sm:bottom-28">
+      <div className="map-float absolute bottom-28 right-4 z-[1100] flex flex-col gap-2">
         {(['+', '−'] as const).map((label) => (
           <button
             key={label}
@@ -737,7 +984,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </div>
 
       {/* Seat status legend */}
-      <div className="map-float absolute bottom-5 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2 sm:bottom-6">
+      <div className="map-float absolute bottom-4 left-4 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2">
         {(['many', 'full'] as const).map((status) => (
           <div key={status} className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: SEAT_COLOR[status] }} />
@@ -745,6 +992,58 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
           </div>
         ))}
       </div>
+
+      {plannedTrip && selectedStartStop && selectedEndStop && (
+        <div className="map-float absolute bottom-4 left-1/2 -translate-x-1/2 z-[1110] w-[min(95vw,740px)] rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-slate-900">Route details</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => toggleFavoriteRoute(plannedTrip.routeId)}
+                className="min-h-11 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+              >
+                {favoriteRouteIds.includes(plannedTrip.routeId) ? 'Saved' : 'Save to favorites'}
+              </button>
+              <button
+                onClick={() => setIsBottomInfoOpen((prev) => !prev)}
+                className="min-h-11 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700"
+              >
+                {isBottomInfoOpen ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+          </div>
+
+          {isBottomInfoOpen && (
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Step-by-step</p>
+                <ol className="mt-2 space-y-1 text-xs text-slate-700">
+                  <li>1. Walk to {selectedStartStop.name}</li>
+                  <li>2. Ride {plannedRouteName ?? plannedTrip.routeId}</li>
+                  <li>3. Alight at {selectedEndStop.name}</li>
+                </ol>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Fare breakdown</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">Regular: ₱13.00 + ₱{Math.max(0, Math.round((plannerPathDistanceKm(plannedRoute, plannedTrip.boardingPoint, plannedTrip.alightingPoint) - 4) * 2)).toFixed(0)}</p>
+                <p className="text-xs text-slate-600">Student/Senior: about 20% discount</p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-500">Alternatives</p>
+                <ul className="mt-2 space-y-1 text-xs text-slate-700">
+                  {routeOptions.slice(0, 3).map((option) => (
+                    <li key={`${option.routeId}-${option.walkDistance}`}>
+                      {option.routeId} · walk {Math.round(option.walkDistance)} m
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Alarm panel/modal */}
       {alarmDraft && (

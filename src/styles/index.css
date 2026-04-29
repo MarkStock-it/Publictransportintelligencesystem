@@ -26,6 +26,11 @@
 
 .map-float {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease;
 }
 
 .jeep-icon-wrap {
@@ -84,10 +89,42 @@
 
 .leaflet-pane.route path.route-active-line {
   filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.35));
+  stroke-dasharray: 14 8;
+  animation: activeRouteDash 1.6s linear infinite;
+}
+
+.leaflet-container .leaflet-control-container {
+  margin: 16px;
+}
+
+.leaflet-popup-content {
+  font-size: clamp(0.78rem, 1.8vw, 0.9rem);
+  line-height: 1.45;
+}
+
+.leaflet-popup-content strong,
+.leaflet-popup-content b,
+.leaflet-popup-content .font-semibold,
+.leaflet-popup-content .font-bold {
+  color: #0f172a;
+}
+
+.jeep-popup-card button {
+  box-shadow: 0 8px 18px rgba(66, 133, 244, 0.25);
+}
+
+.jeep-popup-card button:hover {
+  transform: scale(1.02);
 }
 
 @keyframes walkingDash {
   to {
     stroke-dashoffset: -68;
+  }
+}
+
+@keyframes activeRouteDash {
+  to {
+    stroke-dashoffset: -72;
   }
 }

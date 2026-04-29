@@ -94,6 +94,7 @@ export function useJeepAlarm({
 }: UseJeepAlarmArgs): UseJeepAlarmResult {
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const [alertedTiers, setAlertedTiers] = useState<number[]>([]);
 
   const trackedJeep = useMemo(
     () => (targetJeepId ? allJeepneys.find((j) => j.id === targetJeepId) ?? null : null),
@@ -104,6 +105,7 @@ export function useJeepAlarm({
   useEffect(() => {
     setHasTriggered(false);
     setDistanceKm(null);
+    setAlertedTiers([]);
   }, [targetJeepId, thresholdKm]);
 
   useEffect(() => {
@@ -119,10 +121,25 @@ export function useJeepAlarm({
       const km = haversineKm(userLat, userLng, jeep.lat, jeep.lng);
       setDistanceKm(km);
 
+      const distanceMeters = km * 1000;
+      const tiers = [500, 300, 100];
+      tiers.forEach((tier) => {
+        if (distanceMeters <= tier && !alertedTiers.includes(tier)) {
+          toast.info(`${jeep.id} is within ${tier}m.`);
+          if ('vibrate' in navigator) {
+            navigator.vibrate([90, 60, 90]);
+          }
+          setAlertedTiers((prev) => [...prev, tier]);
+        }
+      });
+
       if (km <= thresholdKm) {
         const message = `${jeep.id} is arriving soon!`;
         triggerBrowserNotification('PTIS Jeepney Alarm', message);
         playAlertBeep();
+        if ('vibrate' in navigator) {
+          navigator.vibrate([200, 80, 240]);
+        }
         toast.success(message);
         setHasTriggered(true); // one-time alert
       }
@@ -132,7 +149,7 @@ export function useJeepAlarm({
     const interval = window.setInterval(runCheck, 3000);
 
     return () => window.clearInterval(interval);
-  }, [allJeepneys, hasTriggered, targetJeepId, thresholdKm, userLat, userLng]);
+  }, [alertedTiers, allJeepneys, hasTriggered, targetJeepId, thresholdKm, userLat, userLng]);
 
   const isActive = Boolean(targetJeepId) && !hasTriggered;
 
