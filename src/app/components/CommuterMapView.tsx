@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { DivIcon, type LatLngBoundsExpression } from 'leaflet';
-import { Toaster } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 import type { SeatStatus } from '../hooks/useJeepSimulation';
 import { useJeepAlarm } from '../hooks/useJeepAlarm';
 import { PinpointAlarm } from './PinpointAlarm';
+import { Toaster } from './ui/sonner';
 import {
   JEEPNEY_ROUTES,
   findBestRoute,

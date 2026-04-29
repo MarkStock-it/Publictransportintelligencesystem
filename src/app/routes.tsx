@@ -1,16 +1,15 @@
 import { createHashRouter, Navigate } from "react-router-dom";
-import { LGUDashboard } from "./components/LGUDashboard";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import LoginPage from "./pages/LoginPage";
-import DriverPage from "./pages/DriverPage";
-import CommuterPage from "./pages/CommuterPage";
 
 export const router = createHashRouter([
   // Public: login
   {
     path: "/login",
-    Component: LoginPage,
+    lazy: async () => {
+      const module = await import("./pages/LoginPage");
+      return { Component: module.default };
+    },
     errorElement: <ErrorBoundary />,
   },
 
@@ -20,7 +19,13 @@ export const router = createHashRouter([
     element: <ProtectedRoute requiredRole="commuter" />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, Component: CommuterPage },
+      {
+        index: true,
+        lazy: async () => {
+          const module = await import("./pages/CommuterPage");
+          return { Component: module.default };
+        },
+      },
     ],
   },
 
@@ -30,7 +35,13 @@ export const router = createHashRouter([
     element: <ProtectedRoute requiredRole="driver" />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, Component: DriverPage },
+      {
+        index: true,
+        lazy: async () => {
+          const module = await import("./pages/DriverPage");
+          return { Component: module.default };
+        },
+      },
     ],
   },
 
@@ -40,7 +51,13 @@ export const router = createHashRouter([
     element: <ProtectedRoute requiredRole="lgu" />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, Component: LGUDashboard },
+      {
+        index: true,
+        lazy: async () => {
+          const module = await import("./components/LGUDashboard");
+          return { Component: module.LGUDashboard };
+        },
+      },
     ],
   },
 

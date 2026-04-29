@@ -63,26 +63,45 @@ export function findBestRoute(
   end: Coordinates,
   routes: Route[],
 ): RouteMatch | null {
-  for (const route of routes) {
-    const nearestStart = findNearestPoint(start, route.path);
-    if (!nearestStart || nearestStart.distance >= WALKING_THRESHOLD_METERS) {
-      continue;
-    }
+  return findRouteOptions(start, end, routes)[0] ?? null;
+}
 
-    const nearestEnd = findNearestPoint(end, route.path);
-    if (!nearestEnd || nearestEnd.distance >= WALKING_THRESHOLD_METERS) {
-      continue;
-    }
+export function findRouteOptions(
+  start: Coordinates,
+  end: Coordinates,
+  routes: Route[],
+): RouteMatch[] {
+  return routes
+    .map((route) => {
+      const nearestStart = findNearestPoint(start, route.path);
+      const nearestEnd = findNearestPoint(end, route.path);
 
-    return {
-      routeId: route.id,
-      boardingPoint: nearestStart.point,
-      alightingPoint: nearestEnd.point,
-      walkDistance: nearestStart.distance + nearestEnd.distance,
-    };
-  }
+      if (!nearestStart || !nearestEnd) {
+        return null;
+      }
 
-  return null;
+      const startIndex = route.path.findIndex((point) => point === nearestStart.point);
+      const endIndex = route.path.findIndex((point) => point === nearestEnd.point);
+
+      if (
+        nearestStart.distance >= WALKING_THRESHOLD_METERS
+        || nearestEnd.distance >= WALKING_THRESHOLD_METERS
+        || startIndex === -1
+        || endIndex === -1
+        || startIndex > endIndex
+      ) {
+        return null;
+      }
+
+      return {
+        routeId: route.id,
+        boardingPoint: nearestStart.point,
+        alightingPoint: nearestEnd.point,
+        walkDistance: nearestStart.distance + nearestEnd.distance,
+      } satisfies RouteMatch;
+    })
+    .filter((match): match is RouteMatch => match !== null)
+    .sort((left, right) => left.walkDistance - right.walkDistance);
 }
 
 export const JEEPNEY_ROUTES = [
