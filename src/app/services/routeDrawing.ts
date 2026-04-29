@@ -46,16 +46,20 @@ export function drawRouteSegment(
 
   const fullRouteLine = L.polyline(fullPath, {
     pane: ROUTE_PANE,
-    color: '#2563eb',
+    color: '#0ea5e9',
     dashArray: '8 8',
-    weight: 2,
-    opacity: 0.3,
+    weight: 3,
+    opacity: 0.75,
+    className: 'route-walk-line',
   });
 
   const activeRouteLine = L.polyline(activeSegment, {
     pane: ROUTE_PANE,
-    color: '#dc2626',
-    weight: 4,
+    color: '#ef4444',
+    weight: 5,
+    lineCap: 'round',
+    lineJoin: 'round',
+    className: 'route-active-line',
   });
 
   const startMarker = L.marker(fullPath[from], {

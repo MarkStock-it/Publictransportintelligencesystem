@@ -93,29 +93,33 @@ function makeMarkerIcon(id: string, seatStatus: SeatStatus): DivIcon {
 
   return new DivIcon({
     html: `
-      <div style="
-        background: ${color};
-        color: #fff;
-        font-size: 10px;
-        font-weight: 700;
-        font-family: monospace;
-        min-width: 46px;
-        padding: 3px 5px;
-        border-radius: 6px;
-        border: 2px solid rgba(255,255,255,0.85);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        white-space: nowrap;
-      ">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="white">
-          <rect x="3" y="11" width="18" height="10" rx="2"/>
-          <path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" stroke="white" stroke-width="2" fill="none"/>
-          <circle cx="8" cy="18" r="1.5" fill="white"/>
-          <circle cx="16" cy="18" r="1.5" fill="white"/>
-        </svg>
-        ${shortId}
+      <div class="jeep-icon-wrap">
+        <span class="jeep-icon-pulse" style="background:${color};"></span>
+        <div style="
+          position:relative;
+          background: ${color};
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          font-family: monospace;
+          min-width: 46px;
+          padding: 3px 5px;
+          border-radius: 999px;
+          border: 2px solid rgba(255,255,255,0.85);
+          box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+        ">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="white">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" stroke="white" stroke-width="2" fill="none"/>
+            <circle cx="8" cy="18" r="1.5" fill="white"/>
+            <circle cx="16" cy="18" r="1.5" fill="white"/>
+          </svg>
+          ${shortId}
+        </div>
       </div>`,
     className: '',
     iconSize: [50, 22],
@@ -154,23 +158,25 @@ function makeRealDriverIcon(seatStatus: 'space' | 'full', jeepId?: string, route
   const routeChip = route ? (route.split(' - ')[0] ?? route) : null;
   return new DivIcon({
     html: `
-      <div style="
-        background:${bg};
-        color:#fff;
-        font-size:10px;
-        font-weight:700;
-        font-family:monospace;
-        min-width:64px;
-        padding:3px 7px;
-        border-radius:6px;
-        border:2.5px solid #fff;
-        box-shadow:0 2px 8px rgba(0,0,0,0.4);
-        display:flex;
-        align-items:center;
-        gap:4px;
-        white-space:nowrap;
-        position:relative;
-      ">
+      <div class="jeep-icon-wrap">
+        <span class="jeep-icon-pulse" style="background:${bg};"></span>
+        <div style="
+          background:${bg};
+          color:#fff;
+          font-size:10px;
+          font-weight:700;
+          font-family:monospace;
+          min-width:64px;
+          padding:3px 7px;
+          border-radius:999px;
+          border:2.5px solid #fff;
+          box-shadow:0 10px 22px rgba(0,0,0,0.32);
+          display:flex;
+          align-items:center;
+          gap:4px;
+          white-space:nowrap;
+          position:relative;
+        ">
         <span style="
           position:absolute;top:-5px;right:-5px;
           background:#facc15;color:#78350f;
@@ -186,6 +192,7 @@ function makeRealDriverIcon(seatStatus: 'space' | 'full', jeepId?: string, route
         </svg>
         ${label}
         ${routeChip ? `<span style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.5); padding:1px 4px; border-radius:999px; font-size:8px; font-weight:800; letter-spacing:0.02em;">${routeChip}</span>` : ''}
+        </div>
       </div>`,
     className: '',
     iconSize: [88, 22],
@@ -314,6 +321,8 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
     TRIP_PLANNER_STOPS[TRIP_PLANNER_STOPS.length - 1]?.name ?? '',
   );
   const [plannedTrip, setPlannedTrip] = useState<RouteMatch | null>(null);
+  const [isRouteCalculating, setIsRouteCalculating] = useState(false);
+  const [routeLookupError, setRouteLookupError] = useState<string | null>(null);
 
   // ── Real driver locations polled from the server every 3 s ───────────────
   const [realDrivers, setRealDrivers] = useState<RealDriverLocation[]>([]);
@@ -411,19 +420,47 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
   useEffect(() => {
     if (!selectedStartStop || !selectedEndStop || selectedStartStop.order >= selectedEndStop.order) {
       setPlannedTrip(null);
+      setRouteLookupError(null);
+      setIsRouteCalculating(false);
       return;
     }
 
-    const match = findBestRoute(
-      selectedStartStop.coords as PlannerCoordinates,
-      selectedEndStop.coords as PlannerCoordinates,
-      TRIP_PLANNER_ROUTES,
-    );
+    let cancelled = false;
+    setIsRouteCalculating(true);
+    setRouteLookupError(null);
 
-    setPlannedTrip(match);
-    if (match) {
-      setCenter(match.boardingPoint);
-    }
+    const frameId = window.requestAnimationFrame(() => {
+      try {
+        const match = findBestRoute(
+          selectedStartStop.coords as PlannerCoordinates,
+          selectedEndStop.coords as PlannerCoordinates,
+          TRIP_PLANNER_ROUTES,
+        );
+
+        if (cancelled) return;
+
+        setPlannedTrip(match);
+        if (!match) {
+          setRouteLookupError('No matching route found for this stop pair under the walking limit.');
+        }
+        if (match) {
+          setCenter(match.boardingPoint);
+        }
+      } catch {
+        if (cancelled) return;
+        setPlannedTrip(null);
+        setRouteLookupError('Route lookup failed. Please try another stop combination.');
+      } finally {
+        if (!cancelled) {
+          setIsRouteCalculating(false);
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frameId);
+    };
   }, [selectedEndStop, selectedStartStop]);
 
   const openAlarmModal = (jeep: CommuterJeepney) => {
@@ -464,7 +501,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       <Toaster position="top-center" richColors />
 
       {/* Top status bar */}
-      <div className="absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md shadow-md">
+      <div className="map-float absolute top-0 left-0 right-0 z-[1100] flex items-center justify-between px-4 py-2.5 bg-slate-900/80 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <span className="text-sm font-black text-white tracking-tight">LarGo</span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-300/70 bg-indigo-500/20 px-2 py-0.5 rounded-full">Commuter</span>
@@ -498,7 +535,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
       {/* Active alarm banner */}
       {isAlarmActive && activeAlarm && trackedJeep && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-[1150] w-[min(95vw,560px)] bg-blue-600 text-white rounded-xl shadow-lg px-4 py-2.5">
+        <div className="map-float absolute top-12 left-1/2 -translate-x-1/2 z-[1150] w-[min(95vw,560px)] bg-blue-600 text-white rounded-xl px-4 py-2.5">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate">
@@ -518,52 +555,63 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
         </div>
       )}
 
-      <div className="absolute top-16 left-4 z-[1150] w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md shadow-xl p-4 space-y-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600">Trip Planner</p>
-          <h2 className="text-sm font-semibold text-slate-900">Jeepney route preview</h2>
-          <p className="text-[11px] text-slate-500">Sample trip planning from Ayala to IT Park is now visible here.</p>
+      <div className="map-float absolute top-20 left-5 z-[1150] w-[min(94vw,360px)] rounded-[8px] border border-slate-200 bg-white/95 backdrop-blur-md px-5 py-6 transition-all duration-300 hover:-translate-y-0.5 sm:top-16 sm:left-6">
+        <div className="rounded-[8px] bg-gradient-to-r from-indigo-700 via-blue-700 to-cyan-700 px-3.5 py-3 text-white shadow-lg">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/85">Trip Planner</p>
+          <h2 className="text-base font-semibold text-white">Jeepney route preview</h2>
+          <p className="text-xs leading-relaxed text-blue-100">Select a start and destination stop to preview route, boarding point, and walking distance.</p>
         </div>
 
-        <label className="block text-xs font-medium text-slate-600">
-          Start
-          <select
-            value={plannerStartName}
-            onChange={(e) => setPlannerStartName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
-          >
-            {TRIP_PLANNER_STOPS.map((stop) => (
-              <option key={`start-${stop.order}`} value={stop.name}>{stop.name}</option>
-            ))}
-          </select>
-        </label>
+        <div className="grid grid-cols-1 gap-3.5 mt-4">
+          <label className="block text-xs font-semibold text-slate-700">
+            Start
+            <select
+              value={plannerStartName}
+              onChange={(e) => setPlannerStartName(e.target.value)}
+              className="mt-1.5 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              {TRIP_PLANNER_STOPS.map((stop) => (
+                <option key={`start-${stop.order}`} value={stop.name}>{stop.name}</option>
+              ))}
+            </select>
+          </label>
 
-        <label className="block text-xs font-medium text-slate-600">
-          Destination
-          <select
-            value={plannerEndName}
-            onChange={(e) => setPlannerEndName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
-          >
-            {TRIP_PLANNER_STOPS.map((stop) => (
-              <option key={`end-${stop.order}`} value={stop.name}>{stop.name}</option>
-            ))}
-          </select>
-        </label>
+          <label className="block text-xs font-semibold text-slate-700">
+            Destination
+            <select
+              value={plannerEndName}
+              onChange={(e) => setPlannerEndName(e.target.value)}
+              className="mt-1.5 w-full rounded-[8px] border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              {TRIP_PLANNER_STOPS.map((stop) => (
+                <option key={`end-${stop.order}`} value={stop.name}>{stop.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {selectedStartStop && selectedEndStop && selectedStartStop.order >= selectedEndStop.order ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <div className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-900 shadow-sm">
             Choose a later stop as the destination to preview the route.
           </div>
+        ) : isRouteCalculating ? (
+          <div className="mt-4 rounded-[8px] border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-800 flex items-center gap-2 shadow-sm">
+            <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+            Calculating best route...
+          </div>
         ) : plannedTrip ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-slate-700 space-y-1">
+          <div className="mt-4 rounded-[8px] border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-slate-800 space-y-1.5 shadow-sm">
             <p><span className="font-semibold text-slate-900">Suggested route:</span> {plannedRouteName ?? plannedTrip.routeId}</p>
             <p><span className="font-semibold text-slate-900">Boarding point:</span> {selectedStartStop?.name}</p>
             <p><span className="font-semibold text-slate-900">Alighting point:</span> {selectedEndStop?.name}</p>
             <p><span className="font-semibold text-slate-900">Estimated walking:</span> {Math.round(plannedTrip.walkDistance)} m</p>
           </div>
+        ) : routeLookupError ? (
+          <div className="mt-4 rounded-[8px] border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-800 shadow-sm">
+            {routeLookupError}
+          </div>
         ) : (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <div className="mt-4 rounded-[8px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 shadow-sm">
             No route matched the walking threshold.
           </div>
         )}
@@ -616,8 +664,8 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
             position={[driver.lat, driver.lng]}
             icon={driver.icon}
           >
-            <Popup>
-              <div className="min-w-[150px] space-y-1.5 py-0.5">
+            <Popup className="jeep-popup">
+              <div className="jeep-popup-card min-w-[150px] space-y-1.5 py-0.5">
                 <div className="flex items-center gap-2">
                   <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">LIVE</span>
                   <span className="font-semibold text-sm text-gray-900">{driver.jeepId ?? driver.name}</span>
@@ -646,15 +694,23 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
               click: () => openAlarmModal(jeep),
             }}
           >
-            <Popup>
-              <div className="min-w-[160px] space-y-2 py-0.5">
+            <Popup className="jeep-popup">
+              <div className="jeep-popup-card min-w-[180px] space-y-2 py-0.5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-mono text-sm font-bold text-gray-900">{jeep.id}</span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${SEAT_BG[jeep.seatStatus]}`}>
                     {SEAT_LABEL[jeep.seatStatus]}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 leading-snug">{jeep.route}</p>
+                <p className="text-xs font-medium text-blue-700 leading-snug">{jeep.route}</p>
+                {userPos && (
+                  <p className="text-xs text-slate-600">
+                    Approx. {formatDistance(
+                      Math.hypot((jeep.lat - userPos.lat) * 111, (jeep.lng - userPos.lng) * 111),
+                    )} from you
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-500">Tap marker to set an approach alarm.</p>
               </div>
             </Popup>
           </Marker>
@@ -664,7 +720,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </MapContainer>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-24 right-4 z-[1100] flex flex-col gap-1">
+      <div className="map-float absolute bottom-24 left-5 z-[1100] flex flex-col gap-2 sm:left-auto sm:right-6 sm:bottom-28">
         {(['+', '−'] as const).map((label) => (
           <button
             key={label}
@@ -673,7 +729,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
               const map = (document.querySelector('.leaflet-container') as { _leaflet_map?: { zoomIn: () => void; zoomOut: () => void } } | null)?._leaflet_map;
               if (map) label === '+' ? map.zoomIn() : map.zoomOut();
             }}
-            className="w-10 h-10 bg-slate-900/80 backdrop-blur-sm border border-white/10 rounded-xl shadow-md text-white/70 font-bold text-lg flex items-center justify-center hover:bg-slate-800/90 active:scale-95 transition-all"
+            className="w-11 h-11 bg-gradient-to-br from-slate-900/90 to-slate-700/90 backdrop-blur-sm border border-white/20 rounded-full shadow-xl text-white font-black text-lg flex items-center justify-center hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
           >
             {label}
           </button>
@@ -681,7 +737,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
       </div>
 
       {/* Seat status legend */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-lg px-4 py-2">
+      <div className="map-float absolute bottom-5 left-1/2 -translate-x-1/2 z-[1100] flex items-center gap-3 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-2 sm:bottom-6">
         {(['many', 'full'] as const).map((status) => (
           <div key={status} className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: SEAT_COLOR[status] }} />

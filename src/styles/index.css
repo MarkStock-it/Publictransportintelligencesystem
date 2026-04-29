@@ -23,3 +23,71 @@
   transform: scale(1.1);
   z-index: 1000 !important;
 }
+
+.map-float {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+}
+
+.jeep-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jeep-icon-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  opacity: 0.24;
+  transform-origin: center;
+  animation: jeepPulse 1.8s ease-out infinite;
+}
+
+@keyframes jeepPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.28;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.leaflet-popup.jeep-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
+}
+
+.leaflet-popup.jeep-popup .leaflet-popup-tip {
+  background: #ffffff;
+  box-shadow: 0 8px 12px rgba(15, 23, 42, 0.15);
+}
+
+.jeep-popup-card {
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.leaflet-pane.route path.route-walk-line {
+  stroke-dasharray: 9 8;
+  animation: walkingDash 2.2s linear infinite;
+}
+
+.leaflet-pane.route path.route-active-line {
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.35));
+}
+
+@keyframes walkingDash {
+  to {
+    stroke-dashoffset: -68;
+  }
+}
