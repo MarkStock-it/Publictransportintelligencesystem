@@ -20,7 +20,7 @@
  * • Multi-beep audio + browser notification on entry.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Circle, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { DivIcon } from 'leaflet';
 import { MapPin, BellRing, BellOff, Crosshair, X, RotateCcw, Check } from 'lucide-react';
@@ -120,6 +120,22 @@ export function PinpointAlarm() {
   const [isPinMode, setIsPinMode] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
 
+  // Keep the panel compact on smaller screens so map interactions stay visible.
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)');
+
+    const applyPanelMode = () => {
+      setPanelOpen(!media.matches);
+    };
+
+    applyPanelMode();
+    media.addEventListener('change', applyPanelMode);
+
+    return () => {
+      media.removeEventListener('change', applyPanelMode);
+    };
+  }, []);
+
   // When user drops a pin, exit pin-placement mode.
   const handleMapClick = useCallback(
     (lat: number, lng: number) => {
@@ -181,13 +197,13 @@ export function PinpointAlarm() {
       {/* ── Control panel ─────────────────────────────────────────────── */}
       <div
         style={{ zIndex: 1200 }}
-        className="absolute right-4 top-24 w-[min(23rem,calc(100vw-2rem))] select-none sm:right-4 sm:top-24"
+        className="absolute inset-x-2 bottom-3 w-auto select-none sm:inset-x-auto sm:right-4 sm:top-24 sm:bottom-auto sm:w-[23rem]"
       >
         {/* Toggle header */}
         <button
           onClick={() => setPanelOpen((o) => !o)}
           aria-label={panelOpen ? 'Collapse Pinpoint Alarm panel' : 'Expand Pinpoint Alarm panel'}
-          className="w-full min-h-11 flex items-center justify-between bg-gradient-to-r from-indigo-700 to-blue-700 rounded-t-2xl px-4 py-3 shadow-xl border border-indigo-500 text-sm font-semibold text-white hover:brightness-105 transition"
+          className="w-full min-h-10 flex items-center justify-between bg-gradient-to-r from-indigo-700 to-blue-700 rounded-2xl sm:rounded-t-2xl sm:rounded-b-none px-3 py-2.5 sm:px-4 sm:py-3 shadow-xl border border-indigo-500 text-sm font-semibold text-white hover:brightness-105 transition"
         >
           <span className="flex items-center gap-2">
             <MapPin size={15} className="text-white" />
@@ -200,7 +216,7 @@ export function PinpointAlarm() {
         </button>
 
         {panelOpen && (
-          <div className="bg-white/95 rounded-b-2xl shadow-xl border border-t-0 border-indigo-100 p-4 backdrop-blur-sm flex flex-col gap-3.5 pinpoint-alarm-panel">
+          <div className="bg-white/95 rounded-2xl sm:rounded-b-2xl sm:rounded-t-none shadow-xl border border-indigo-100 sm:border-t-0 p-3 sm:p-4 backdrop-blur-sm flex flex-col gap-3 sm:gap-3.5 max-h-[52vh] sm:max-h-none overflow-y-auto pinpoint-alarm-panel">
 
             {isPinMode && (
               <div className="rounded-lg border-2 border-indigo-400 bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 text-xs font-semibold text-indigo-800 animate-pulse flex items-center gap-1.5">
