@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="LarGo maskable icon">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0f172a" />
+      <stop offset="1" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)" />
+  <circle cx="256" cy="170" r="54" fill="#ffffff" opacity="0.96" />
+  <path d="M256 108c-56.333 0-102 45.667-102 102 0 76.089 102 198 102 198s102-121.911 102-198c0-56.333-45.667-102-102-102zm0 133.6a31.6 31.6 0 1 1 0-63.2 31.6 31.6 0 0 1 0 63.2z" fill="#ffffff" />
+  <rect x="146" y="360" width="220" height="34" rx="17" fill="#93c5fd" opacity="0.9" />
+</svg>
