@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { DivIcon } from 'leaflet';
-import { MapPin, BellRing, BellOff, Crosshair, X, RotateCcw } from 'lucide-react';
+import { MapPin, BellRing, BellOff, Crosshair, X, RotateCcw, Check } from 'lucide-react';
 import { usePinpointAlarm } from '../hooks/usePinpointAlarm';
 
 // ─── Pin marker icon ──────────────────────────────────────────────────────────
@@ -203,8 +203,8 @@ export function PinpointAlarm() {
           <div className="bg-white/95 rounded-b-2xl shadow-xl border border-t-0 border-indigo-100 p-4 backdrop-blur-sm flex flex-col gap-3.5 pinpoint-alarm-panel">
 
             {isPinMode && (
-              <div className="rounded-lg border-2 border-indigo-400 bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 text-xs font-semibold text-indigo-800 animate-pulse">
-                📍 Pin mode active. Click anywhere on the map to place your pin.
+              <div className="rounded-lg border-2 border-indigo-400 bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 text-xs font-semibold text-indigo-800 animate-pulse flex items-center gap-1.5">
+                <MapPin size={13} className="shrink-0" /> Pin mode active. Click anywhere on the map to place your pin.
               </div>
             )}
 
@@ -264,7 +264,7 @@ export function PinpointAlarm() {
                 }`}
               >
                 <MapPin size={13} />
-                {isPinMode ? '📍 Click map to pin…' : pin ? 'Move Pin' : 'Set Pin'}
+                {isPinMode ? 'Click map to pin…' : pin ? 'Move Pin' : 'Set Pin'}
                 {isPinMode && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />}
               </button>
 
@@ -316,7 +316,7 @@ export function PinpointAlarm() {
             {/* Triggered celebration */}
             {hasTriggered && (
               <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700 font-medium text-center">
-                ✓ Alarm triggered — you reached the pin!
+                <Check size={13} className="inline mr-1" />Alarm triggered — you reached the pin!
               </div>
             )}
           </div>

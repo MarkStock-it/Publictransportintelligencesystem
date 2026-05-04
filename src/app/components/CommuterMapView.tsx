@@ -17,6 +17,7 @@ import {
 } from '../data/jeepneyRoutes';
 import { drawRouteSegment } from '../services/routeDrawing';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { MapPin, Ruler, Bell, AlertTriangle } from 'lucide-react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 const PHILIPPINES_BOUNDS: LatLngBoundsExpression = [
@@ -813,7 +814,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
 
         {selectedStartStop && selectedEndStop && selectedStartStop.order >= selectedEndStop.order ? (
           <div className="mt-4 rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3 text-xs font-semibold text-amber-900 shadow-sm flex items-center gap-2">
-            ⚠️ Choose a later stop as the destination to preview the route.
+            <AlertTriangle size={14} className="shrink-0" />Choose a later stop as the destination to preview the route.
           </div>
         ) : isRouteCalculating ? (
           <div className="mt-4 rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-indigo-100 px-4 py-3 text-sm text-indigo-900 flex items-center gap-3 shadow-sm animate-pulse">
@@ -960,9 +961,9 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
                 </div>
 
                 <div className="border-t border-slate-200 pt-2 text-xs text-slate-700 space-y-1">
-                  <p>📍 <span className="font-semibold">Next stop in {Math.max(1, Math.floor(Math.random() * 4) + 1)} min</span></p>
+                  <p className="flex items-center gap-1"><MapPin size={11} className="shrink-0 text-blue-500" /><span className="font-semibold">Next stop in {Math.max(1, Math.floor(Math.random() * 4) + 1)} min</span></p>
                   {userPos && (
-                    <p>📏 <span className="font-semibold">{formatDistance(Math.hypot((jeep.lat - userPos.lat) * 111, (jeep.lng - userPos.lng) * 111))}</span> from you</p>
+                    <p className="flex items-center gap-1"><Ruler size={11} className="shrink-0 text-blue-500" /><span className="font-semibold">{formatDistance(Math.hypot((jeep.lat - userPos.lat) * 111, (jeep.lng - userPos.lng) * 111))}</span> from you</p>
                   )}
                 </div>
 
@@ -973,7 +974,7 @@ export function CommuterMapView({ jeepneys, onLogout }: CommuterMapViewProps) {
                   }}
                   className="w-full min-h-10 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-3 text-xs font-bold text-white hover:from-blue-700 hover:to-blue-600 transition-all active:scale-95"
                 >
-                  🔔 Notify when nearby
+                  <Bell size={13} className="inline mr-1" />Notify when nearby
                 </button>
               </div>
             </Popup>
